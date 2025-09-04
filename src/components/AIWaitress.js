@@ -195,7 +195,7 @@ function AIWaitress() {
                 onClick={() => navigate('/chef')}
                 className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors"
               >
-                Chef Dashboard
+                View Menu
               </button>
             </div>
           </div>
