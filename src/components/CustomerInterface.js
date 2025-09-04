@@ -68,6 +68,18 @@ function CustomerInterface() {
             </div>
             <div className="flex items-center space-x-4">
               <button 
+                onClick={() => navigate('/profile-setup')}
+                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+              >
+                🎯 Profile
+              </button>
+              <button 
+                onClick={() => navigate('/history')}
+                className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                📋 History
+              </button>
+              <button 
                 onClick={() => navigate('/ai-waitress')}
                 className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
               >
@@ -177,8 +189,15 @@ function CustomerInterface() {
                     <div className="flex justify-between items-center mb-4">
                       <span className="text-lg font-bold text-gray-900">Total: ${getTotalPrice()}</span>
                     </div>
-                    <button className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors font-semibold">
-                      Place Order
+                    <button 
+                      onClick={() => {
+                        // Save cart to localStorage and navigate to checkout
+                        localStorage.setItem('currentCart', JSON.stringify(cart));
+                        navigate('/checkout', { state: { cart } });
+                      }}
+                      className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors font-semibold"
+                    >
+                      Proceed to Checkout
                     </button>
                   </div>
                 </>

@@ -59,18 +59,69 @@ function AIWaitress() {
   const getAIResponse = (userMessage) => {
     const message = userMessage.toLowerCase();
     
+    // Try to get user profile for personalized responses
+    const userProfile = JSON.parse(localStorage.getItem('userProfile') || '{}');
+    const hasProfile = Object.keys(userProfile).length > 0;
+    
     if (message.includes('hello') || message.includes('hi') || message.includes('hey')) {
+      if (hasProfile && userProfile.name) {
+        return `Hello ${userProfile.name}! I'm Sofia, your AI waitress. Based on your profile, I can give you personalized recommendations. How can I help you today?`;
+      }
       return aiResponses.greeting[Math.floor(Math.random() * aiResponses.greeting.length)];
     } else if (message.includes('menu') || message.includes('food') || message.includes('dish')) {
+      if (hasProfile && userProfile.cuisinePreferences?.length > 0) {
+        return `Great! I see you enjoy ${userProfile.cuisinePreferences.join(', ')} cuisine. Our menu has excellent options in those categories. We have ${userProfile.cuisinePreferences.includes('Italian') ? 'Margherita Pizza by Chef Antonio, ' : ''}${userProfile.cuisinePreferences.includes('French') ? 'Beef Wellington by Chef Isabella, ' : ''}${userProfile.cuisinePreferences.includes('Mediterranean') ? 'Grilled Salmon by Chef Mario, ' : ''}and many more. What sounds good to you?`;
+      }
       return aiResponses.menu[Math.floor(Math.random() * aiResponses.menu.length)];
     } else if (message.includes('recommend') || message.includes('suggest') || message.includes('best')) {
+      if (hasProfile) {
+        let recommendations = [];
+        
+        // Budget-based recommendations
+        if (userProfile.budgetRange === '$10-20') {
+          recommendations.push('Caesar Salad ($15) and Chocolate Soufflé ($12)');
+        } else if (userProfile.budgetRange === '$20-35') {
+          recommendations.push('Grilled Salmon ($28) or Margherita Pizza ($22)');
+        } else if (userProfile.budgetRange === '$35-50') {
+          recommendations.push('Beef Wellington ($35) - a premium choice');
+        }
+        
+        // Dietary restriction recommendations
+        if (userProfile.dietaryRestrictions?.includes('Vegetarian')) {
+          recommendations.push('our vegetarian Margherita Pizza');
+        }
+        if (userProfile.dietaryRestrictions?.includes('Gluten-Free')) {
+          recommendations.push('our gluten-free Caesar Salad (can be made without croutons)');
+        }
+        
+        // Goal-based recommendations
+        if (userProfile.goals?.includes('Weight Loss')) {
+          recommendations.push('the light and healthy Caesar Salad');
+        }
+        if (userProfile.goals?.includes('Heart Health')) {
+          recommendations.push('our Grilled Salmon with omega-3 fatty acids');
+        }
+        
+        if (recommendations.length > 0) {
+          return `Based on your profile, I'd recommend ${recommendations.join(' or ')}. These align with your preferences and dietary goals!`;
+        }
+      }
       return aiResponses.recommendations[Math.floor(Math.random() * aiResponses.recommendations.length)];
     } else if (message.includes('vegetarian') || message.includes('vegan') || message.includes('gluten') || message.includes('allergy') || message.includes('dietary')) {
+      if (hasProfile && userProfile.dietaryRestrictions?.length > 0) {
+        return `I see from your profile that you follow a ${userProfile.dietaryRestrictions.join(', ')} diet. ${userProfile.allergies?.length > 0 ? `And I'll make sure to avoid ${userProfile.allergies.join(', ')}.` : ''} Let me suggest dishes that work perfectly for you!`;
+      }
       return aiResponses.dietary[Math.floor(Math.random() * aiResponses.dietary.length)];
     } else if (message.includes('order') || message.includes('buy') || message.includes('cart')) {
       return aiResponses.ordering[Math.floor(Math.random() * aiResponses.ordering.length)];
     } else if (message.includes('chef') || message.includes('cook')) {
       return aiResponses.chefs[Math.floor(Math.random() * aiResponses.chefs.length)];
+    } else if (message.includes('profile') || message.includes('preference')) {
+      if (hasProfile) {
+        return `I can see your profile! You enjoy ${userProfile.cuisinePreferences?.join(', ') || 'various cuisines'}, ${userProfile.dietaryRestrictions?.length > 0 ? `follow a ${userProfile.dietaryRestrictions.join(', ')} diet, ` : ''}and your budget is around ${userProfile.budgetRange || 'flexible'}. Would you like recommendations based on these preferences?`;
+      } else {
+        return "I don't see a profile set up for you yet. Would you like to set up your dining preferences? It helps me give you much better recommendations!";
+      }
     } else {
       return "That's an interesting question! I'm here to help you with menu information, recommendations, dietary requirements, and placing orders. What would you like to know more about?";
     }
@@ -112,8 +163,9 @@ function AIWaitress() {
 
   const quickQuestions = [
     "What's popular today?",
+    "Give me personalized recommendations",
     "Any vegetarian options?",
-    "Tell me about the chefs",
+    "Show me my profile preferences",
     "Help me place an order"
   ];
 

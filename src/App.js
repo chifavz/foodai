@@ -4,6 +4,9 @@ import LandingPage from './components/LandingPage';
 import ChefDashboard from './components/ChefDashboard';
 import CustomerInterface from './components/CustomerInterface';
 import AIWaitress from './components/AIWaitress';
+import ProfileSetup from './components/ProfileSetup';
+import History from './components/History';
+import OrderRedirect from './components/OrderRedirect';
 import './App.css';
 
 function App() {
@@ -15,6 +18,9 @@ function App() {
           <Route path="/chef" element={<ChefDashboard />} />
           <Route path="/customer" element={<CustomerInterface />} />
           <Route path="/ai-waitress" element={<AIWaitress />} />
+          <Route path="/profile-setup" element={<ProfileSetup />} />
+          <Route path="/history" element={<History />} />
+          <Route path="/checkout" element={<OrderRedirect />} />
         </Routes>
       </div>
     </Router>
