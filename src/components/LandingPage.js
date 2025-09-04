@@ -65,12 +65,26 @@ function LandingPage() {
                 <p className="text-gray-600 mb-6">
                   Discover amazing dishes, chat with our AI waitress, and enjoy personalized dining experiences.
                 </p>
-                <button
-                  onClick={() => navigate('/customer')}
-                  className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-300"
-                >
-                  Start Ordering
-                </button>
+                <div className="space-y-3">
+                  <button
+                    onClick={() => navigate('/profile-setup')}
+                    className="w-full bg-green-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-green-700 transition-colors duration-300"
+                  >
+                    🎯 Setup My Profile
+                  </button>
+                  <button
+                    onClick={() => navigate('/customer')}
+                    className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-300"
+                  >
+                    Browse Menu
+                  </button>
+                  <button
+                    onClick={() => navigate('/history')}
+                    className="w-full bg-gray-600 text-white py-2 px-6 rounded-lg font-semibold hover:bg-gray-700 transition-colors duration-300"
+                  >
+                    📋 Order History
+                  </button>
+                </div>
               </div>
             </div>
           </div>
