@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 
 function CustomerInterface() {
   const navigate = useNavigate();
   const [cart, setCart] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [deliveryMethod, setDeliveryMethod] = useState('delivery');
+  const [showCheckout, setShowCheckout] = useState(false);
   const [menuItems] = useState([
     { id: 1, name: 'Grilled Salmon', price: 28, description: 'Fresh Atlantic salmon with lemon herbs', category: 'Main Course', chef: 'Chef Mario', rating: 4.8, image: '🐟' },
     { id: 2, name: 'Caesar Salad', price: 15, description: 'Crisp romaine lettuce with parmesan and croutons', category: 'Appetizer', chef: 'Chef Mario', rating: 4.6, image: '🥗' },
@@ -44,8 +48,32 @@ function CustomerInterface() {
     return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
   };
 
+  const deliveryOptions = [
+    { id: 'delivery', label: 'Delivery', icon: '🚗', fee: 3.99, time: '30-45 min' },
+    { id: 'pickup', label: 'Pickup', icon: '🚶‍♂️', fee: 0, time: '15-20 min' },
+    { id: 'dine-in', label: 'Dine In', icon: '🍽️', fee: 0, time: 'Book table' }
+  ];
+
+  const handlePlaceOrder = () => {
+    setShowCheckout(true);
+  };
+
+  const handleCheckout = () => {
+    // TODO: Integrate with Stripe API
+    console.log('Processing payment...', {
+      cart,
+      deliveryMethod,
+      total: getTotalPrice() + (deliveryMethod === 'delivery' ? 3.99 : 0)
+    });
+    
+    // Simulate successful order
+    alert('Order placed successfully! You will receive a confirmation email shortly.');
+    setCart([]);
+    setShowCheckout(false);
+    navigate('/profile');
+  };
+
   const categories = ['All', 'Appetizer', 'Main Course', 'Dessert'];
-  const [selectedCategory, setSelectedCategory] = useState('All');
 
   const filteredItems = selectedCategory === 'All' 
     ? menuItems 
@@ -72,6 +100,12 @@ function CustomerInterface() {
                 className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
               >
                 💬 AI Waitress
+              </button>
+              <button 
+                onClick={() => navigate('/profile')}
+                className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                👤 Profile
               </button>
               <div className="relative">
                 <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
@@ -173,14 +207,121 @@ function CustomerInterface() {
                     ))}
                   </div>
                   
-                  <div className="border-t pt-4">
-                    <div className="flex justify-between items-center mb-4">
-                      <span className="text-lg font-bold text-gray-900">Total: ${getTotalPrice()}</span>
+                  {!showCheckout ? (
+                    <div className="border-t pt-4">
+                      {/* Delivery Options */}
+                      <div className="mb-4">
+                        <h3 className="font-semibold text-gray-900 mb-3">Delivery Method</h3>
+                        <div className="grid grid-cols-3 gap-2">
+                          {deliveryOptions.map(option => (
+                            <button
+                              key={option.id}
+                              onClick={() => setDeliveryMethod(option.id)}
+                              className={`p-3 border-2 rounded-lg text-center transition-all ${
+                                deliveryMethod === option.id
+                                  ? 'border-blue-500 bg-blue-50 text-blue-700'
+                                  : 'border-gray-200 hover:border-gray-300'
+                              }`}
+                            >
+                              <div className="text-lg mb-1">{option.icon}</div>
+                              <div className="text-sm font-medium">{option.label}</div>
+                              <div className="text-xs text-gray-600">
+                                {option.fee > 0 ? `$${option.fee}` : 'Free'}
+                              </div>
+                              <div className="text-xs text-gray-500">{option.time}</div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Order Summary */}
+                      <div className="space-y-2 mb-4">
+                        <div className="flex justify-between text-gray-700">
+                          <span>Subtotal:</span>
+                          <span>${getTotalPrice().toFixed(2)}</span>
+                        </div>
+                        {deliveryMethod === 'delivery' && (
+                          <div className="flex justify-between text-gray-700">
+                            <span>Delivery Fee:</span>
+                            <span>$3.99</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between text-lg font-bold text-gray-900 border-t pt-2">
+                          <span>Total:</span>
+                          <span>${(getTotalPrice() + (deliveryMethod === 'delivery' ? 3.99 : 0)).toFixed(2)}</span>
+                        </div>
+                      </div>
+
+                      <button 
+                        onClick={handlePlaceOrder}
+                        className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors font-semibold"
+                      >
+                        Continue to Checkout
+                      </button>
                     </div>
-                    <button className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors font-semibold">
-                      Place Order
-                    </button>
-                  </div>
+                  ) : (
+                    <div className="border-t pt-4">
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="space-y-4"
+                      >
+                        <h3 className="font-semibold text-gray-900">Payment Information</h3>
+                        
+                        {/* Payment Form - Placeholder for Stripe integration */}
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Card Number</label>
+                            <input 
+                              type="text" 
+                              placeholder="1234 5678 9012 3456"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Expiry</label>
+                              <input 
+                                type="text" 
+                                placeholder="MM/YY"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">CVC</label>
+                              <input 
+                                type="text" 
+                                placeholder="123"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="bg-blue-50 p-4 rounded-lg">
+                          <div className="text-sm text-blue-800">
+                            <p className="font-medium mb-1">🔒 Secure Payment with Stripe</p>
+                            <p>Your payment information is encrypted and secure.</p>
+                          </div>
+                        </div>
+
+                        <div className="flex space-x-3">
+                          <button 
+                            onClick={() => setShowCheckout(false)}
+                            className="flex-1 bg-gray-300 text-gray-700 py-3 rounded-lg hover:bg-gray-400 transition-colors font-semibold"
+                          >
+                            Back to Cart
+                          </button>
+                          <button 
+                            onClick={handleCheckout}
+                            className="flex-1 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors font-semibold"
+                          >
+                            Place Order ${(getTotalPrice() + (deliveryMethod === 'delivery' ? 3.99 : 0)).toFixed(2)}
+                          </button>
+                        </div>
+                      </motion.div>
+                    </div>
+                  )}
                 </>
               )}
             </div>
