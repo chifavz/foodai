@@ -5,16 +5,18 @@ FoodAI is a modern web application that connects talented chefs with food lovers
 ## ✨ Features
 
 ### 🍽️ **For Everyone**
-- **Beautiful Landing Page** - Choose your experience as a Chef or Customer
+- **Beautiful Landing Page** - Choose your experience to View Menu or Browse & Order
+- **Generated Menu** - View today's available dishes from talented chefs with ratings and details
 - **AI Waitress (Sofia)** - Intelligent chat assistant for menu recommendations and dining guidance
 - **Responsive Design** - Works perfectly on all devices
 - **Modern UI** - Built with Tailwind CSS for a sleek, professional look
 
-### 👨‍🍳 **For Chefs**
-- **Chef Dashboard** - Manage your culinary creations and orders
-- **Menu Management** - Add, edit, and toggle availability of dishes
-- **Order Tracking** - Real-time order management with status updates
-- **Analytics** - Track daily orders, revenue, ratings, and menu performance
+### 📋 **Menu Display**
+- **Today's Menu** - View all available dishes organized by category
+- **Category Statistics** - See count of appetizers, main courses, desserts, and total available items
+- **Category Filtering** - Filter by Appetizer, Main Course, Dessert or view all
+- **Chef Information** - See ratings, descriptions, and chef details for each dish
+- **Availability Status** - Only displays currently available menu items
 
 ### 🍴 **For Customers** 
 - **Browse Menu** - Discover amazing dishes from verified chefs
@@ -78,12 +80,12 @@ Builds the app for production to the `build` folder. The build is minified and o
 ```
 src/
 ├── components/
-│   ├── LandingPage.js      # Main landing page with role selection
-│   ├── ChefDashboard.js    # Chef management interface
-│   ├── CustomerInterface.js # Customer browsing and ordering
-│   └── AIWaitress.js       # AI chat interface
-├── App.js                  # Main app with routing
-└── index.js               # App entry point
+│   ├── LandingPage.js        # Main landing page with role selection
+│   ├── ChefDashboard.js      # Generated menu display (renamed from chef dashboard)
+│   ├── CustomerInterface.js  # Customer browsing and ordering
+│   └── AIWaitress.js         # AI chat interface
+├── App.js                    # Main app with routing
+└── index.js                 # App entry point
 ```
 
 ## 🎨 Design System
@@ -97,15 +99,14 @@ The app uses a consistent color scheme:
 ## 🌟 Key Features Implemented
 
 ### Navigation Flow
-1. **Landing Page** → Choose Chef or Customer experience
-2. **Chef Dashboard** → Manage menu and orders + Access AI Waitress
+1. **Landing Page** → Choose to View Menu or Browse & Order experience
+2. **Generated Menu** → View today's available dishes with chef details + Access AI Waitress
 3. **Customer Interface** → Browse menu and add to cart + Access AI Waitress
 4. **AI Waitress** → Chat interface accessible from any page
 
 ### Mock Data
 The app includes realistic mock data for:
-- Menu items with chef information, ratings, and prices
-- Order history with different statuses
+- Menu items with chef information, ratings, prices, and availability status
 - Chef profiles and specialties
 - AI responses for common dining scenarios
 

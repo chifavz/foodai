@@ -40,19 +40,19 @@ function LandingPage() {
           </div>
           
           <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {/* Chef Card */}
+            {/* Menu Card */}
             <div className="bg-white rounded-lg shadow-lg p-8 hover:shadow-xl transition-shadow duration-300">
               <div className="text-center">
-                <div className="text-6xl mb-4">👨‍🍳</div>
-                <h4 className="text-2xl font-bold text-gray-900 mb-4">I'm a Chef</h4>
+                <div className="text-6xl mb-4">🍽️</div>
+                <h4 className="text-2xl font-bold text-gray-900 mb-4">View Menu</h4>
                 <p className="text-gray-600 mb-6">
-                  Showcase your culinary creations, manage your menu, and connect with food lovers worldwide.
+                  Browse today's available dishes from our talented chefs with detailed information and ratings.
                 </p>
                 <button
                   onClick={() => navigate('/chef')}
                   className="w-full bg-orange-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-orange-700 transition-colors duration-300"
                 >
-                  Enter Chef Dashboard
+                  View Today's Menu
                 </button>
               </div>
             </div>
