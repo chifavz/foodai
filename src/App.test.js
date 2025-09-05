@@ -1,5 +1,6 @@
 import React from 'react';
 
+
 test('foodai app components are available', () => {
   // Simple smoke test to ensure the main files exist
   // We'll test basic functionality without importing components that have dependencies
@@ -25,4 +26,14 @@ test('foodai app components are available', () => {
     const serviceFiles = fs.readdirSync(servicePath);
     expect(serviceFiles).toContain('api.js');
   }
+
+test('foodai app components can be imported', () => {
+  // Simple smoke test to ensure the main components can be imported
+  // We'll test them individually to avoid router setup in tests
+  const LandingPage = require('./components/LandingPage').default;
+  const ChefDashboard = require('./components/ChefDashboard').default;
+  
+  expect(LandingPage).toBeDefined();
+  expect(ChefDashboard).toBeDefined();
+
 });
