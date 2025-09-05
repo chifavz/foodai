@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useLoading } from '../contexts/LoadingContext';
+import apiService from '../services/api';
 
 function ProfileSetup() {
   const navigate = useNavigate();
+  const { startLoading, stopLoading, setLoadingError } = useLoading();
   const [profile, setProfile] = useState({
     name: '',
     dietaryRestrictions: [],
@@ -45,11 +48,23 @@ function ProfileSetup() {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Save profile to localStorage for now (would be backend API call in real app)
-    localStorage.setItem('userProfile', JSON.stringify(profile));
-    navigate('/customer');
+    
+    if (!profile.name.trim()) {
+      setLoadingError('Please enter your name');
+      return;
+    }
+
+    startLoading();
+    
+    try {
+      await apiService.saveUserProfile(profile);
+      stopLoading();
+      navigate('/customer');
+    } catch (error) {
+      setLoadingError('Failed to save profile. Please try again.');
+    }
   };
 
   return (

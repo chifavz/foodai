@@ -1,17 +1,40 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useLoading } from '../contexts/LoadingContext';
+import apiService from '../services/api';
 
 function CustomerInterface() {
   const navigate = useNavigate();
+  const { startLoading, stopLoading, setLoadingError } = useLoading();
   const [cart, setCart] = useState([]);
-  const [menuItems] = useState([
-    { id: 1, name: 'Grilled Salmon', price: 28, description: 'Fresh Atlantic salmon with lemon herbs', category: 'Main Course', chef: 'Chef Mario', rating: 4.8, image: '🐟' },
-    { id: 2, name: 'Caesar Salad', price: 15, description: 'Crisp romaine lettuce with parmesan and croutons', category: 'Appetizer', chef: 'Chef Mario', rating: 4.6, image: '🥗' },
-    { id: 3, name: 'Beef Wellington', price: 35, description: 'Tender beef wrapped in puff pastry with mushroom duxelles', category: 'Main Course', chef: 'Chef Isabella', rating: 4.9, image: '🥩' },
-    { id: 4, name: 'Chocolate Soufflé', price: 12, description: 'Warm chocolate soufflé with vanilla ice cream', category: 'Dessert', chef: 'Chef Pierre', rating: 4.7, image: '🍰' },
-    { id: 5, name: 'Lobster Bisque', price: 18, description: 'Rich and creamy lobster soup with a hint of brandy', category: 'Appetizer', chef: 'Chef Isabella', rating: 4.8, image: '🦞' },
-    { id: 6, name: 'Margherita Pizza', price: 22, description: 'Traditional pizza with fresh mozzarella, tomatoes, and basil', category: 'Main Course', chef: 'Chef Antonio', rating: 4.5, image: '🍕' },
-  ]);
+  const [menuItems, setMenuItems] = useState([]);
+
+  // Load menu items and cart on component mount
+  useEffect(() => {
+    const loadData = async () => {
+      startLoading();
+      try {
+        const [items, savedCart] = await Promise.all([
+          apiService.getMenuItems(),
+          apiService.getCart()
+        ]);
+        setMenuItems(items);
+        setCart(savedCart);
+        stopLoading();
+      } catch (error) {
+        setLoadingError('Failed to load menu items');
+      }
+    };
+
+    loadData();
+  }, [startLoading, stopLoading, setLoadingError]);
+
+  // Save cart whenever it changes
+  useEffect(() => {
+    if (cart.length > 0) {
+      apiService.saveCart(cart);
+    }
+  }, [cart]);
 
   const addToCart = (item) => {
     const existingItem = cart.find(cartItem => cartItem.id === item.id);
@@ -191,8 +214,7 @@ function CustomerInterface() {
                     </div>
                     <button 
                       onClick={() => {
-                        // Save cart to localStorage and navigate to checkout
-                        localStorage.setItem('currentCart', JSON.stringify(cart));
+                        // Navigate to checkout with cart data
                         navigate('/checkout', { state: { cart } });
                       }}
                       className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors font-semibold"

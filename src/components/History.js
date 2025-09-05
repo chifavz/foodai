@@ -1,84 +1,122 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useLoading } from '../contexts/LoadingContext';
+import apiService from '../services/api';
 
 function History() {
   const navigate = useNavigate();
+  const { startLoading, stopLoading, setLoadingError } = useLoading();
   const [orders, setOrders] = useState([]);
   const [ratingModal, setRatingModal] = useState({ show: false, order: null });
 
-  // Mock order history data (in real app, this would come from backend API)
+  // Load order history from API service
   useEffect(() => {
-    const mockOrders = [
-      {
-        id: 1,
-        date: '2024-01-15',
-        time: '7:30 PM',
-        items: [
-          { name: 'Grilled Salmon', chef: 'Chef Mario', price: 28, rating: 5 },
-          { name: 'Caesar Salad', chef: 'Chef Mario', price: 15, rating: 4 }
-        ],
-        total: 43,
-        status: 'Delivered',
-        deliveryMethod: 'DoorDash',
-        rated: true
-      },
-      {
-        id: 2,
-        date: '2024-01-12',
-        time: '6:45 PM',
-        items: [
-          { name: 'Beef Wellington', chef: 'Chef Isabella', price: 35, rating: 0 },
-          { name: 'Chocolate Soufflé', chef: 'Chef Pierre', price: 12, rating: 0 }
-        ],
-        total: 47,
-        status: 'Delivered',
-        deliveryMethod: 'Uber Eats',
-        rated: false
-      },
-      {
-        id: 3,
-        date: '2024-01-10',
-        time: '8:15 PM',
-        items: [
-          { name: 'Margherita Pizza', chef: 'Chef Antonio', price: 22, rating: 4 },
-          { name: 'Lobster Bisque', chef: 'Chef Isabella', price: 18, rating: 5 }
-        ],
-        total: 40,
-        status: 'Delivered',
-        deliveryMethod: 'Pickup',
-        rated: true
+    const loadOrders = async () => {
+      startLoading();
+      try {
+        let orderHistory = await apiService.getOrderHistory();
+        
+        // If no orders exist, add some mock data
+        if (orderHistory.length === 0) {
+          const mockOrders = [
+            {
+              id: 1,
+              date: '2024-01-15',
+              time: '7:30 PM',
+              items: [
+                { name: 'Grilled Salmon', chef: 'Chef Mario', price: 28, rating: 5 },
+                { name: 'Caesar Salad', chef: 'Chef Mario', price: 15, rating: 4 }
+              ],
+              total: 43,
+              status: 'Delivered',
+              deliveryMethod: 'DoorDash',
+              rated: true
+            },
+            {
+              id: 2,
+              date: '2024-01-12',
+              time: '6:45 PM',
+              items: [
+                { name: 'Beef Wellington', chef: 'Chef Isabella', price: 35, rating: 0 },
+                { name: 'Chocolate Soufflé', chef: 'Chef Pierre', price: 12, rating: 0 }
+              ],
+              total: 47,
+              status: 'Delivered',
+              deliveryMethod: 'Uber Eats',
+              rated: false
+            },
+            {
+              id: 3,
+              date: '2024-01-10',
+              time: '8:15 PM',
+              items: [
+                { name: 'Margherita Pizza', chef: 'Chef Antonio', price: 22, rating: 4 },
+                { name: 'Lobster Bisque', chef: 'Chef Isabella', price: 18, rating: 5 }
+              ],
+              total: 40,
+              status: 'Delivered',
+              deliveryMethod: 'Pickup',
+              rated: true
+            }
+          ];
+          
+          // Save mock orders using API service
+          for (const order of mockOrders) {
+            await apiService.placeOrder(order);
+          }
+          orderHistory = mockOrders;
+        }
+        
+        setOrders(orderHistory);
+        stopLoading();
+      } catch (error) {
+        setLoadingError('Failed to load order history');
       }
-    ];
+    };
 
-    // Load from localStorage if exists, otherwise use mock data
-    const savedOrders = localStorage.getItem('orderHistory');
-    if (savedOrders) {
-      setOrders(JSON.parse(savedOrders));
-    } else {
-      setOrders(mockOrders);
-      localStorage.setItem('orderHistory', JSON.stringify(mockOrders));
-    }
-  }, []);
+    loadOrders();
+  }, [startLoading, stopLoading, setLoadingError]);
 
   const handleRateOrder = (order) => {
     setRatingModal({ show: true, order });
   };
 
-  const submitRating = (orderId, ratings) => {
-    const updatedOrders = orders.map(order => {
-      if (order.id === orderId) {
-        const updatedItems = order.items.map((item, index) => ({
-          ...item,
-          rating: ratings[index] || 0
-        }));
-        return { ...order, items: updatedItems, rated: true };
-      }
-      return order;
-    });
-    
-    setOrders(updatedOrders);
-    localStorage.setItem('orderHistory', JSON.stringify(updatedOrders));
-    setRatingModal({ show: false, order: null });
+  const submitRating = async (orderId, ratings) => {
+    try {
+      // Update rating using API service
+      await apiService.updateOrderRating(orderId, ratings);
+      
+      // Update local state
+      const updatedOrders = orders.map(order => {
+        if (order.id === orderId) {
+          const updatedItems = order.items.map((item, index) => ({
+            ...item,
+            rating: ratings[index] || 0
+          }));
+          return { ...order, items: updatedItems, rated: true };
+        }
+        return order;
+      });
+      
+      setOrders(updatedOrders);
+      setRatingModal({ show: false, order: null });
+    } catch (error) {
+      console.error('Failed to submit rating:', error);
+      // Still update local state as fallback
+      const updatedOrders = orders.map(order => {
+        if (order.id === orderId) {
+          const updatedItems = order.items.map((item, index) => ({
+            ...item,
+            rating: ratings[index] || 0
+          }));
+          return { ...order, items: updatedItems, rated: true };
+        }
+        return order;
+      });
+      
+      setOrders(updatedOrders);
+      setRatingModal({ show: false, order: null });
+    }
   };
 
   const getStatusColor = (status) => {
