@@ -1,13 +1,3 @@
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import Signup from './pages/Signup';
-import Preferences from './pages/Preferences';
-import Home from './pages/Home';
-import Recommendations from './pages/Recommendations';
-import Order from './pages/Order';
-import Tracking from './pages/Tracking';
-import Feedback from './pages/Feedback';
-import Profile from './pages/Profile';
-import './App.css';
 
 function App() {
   return (
