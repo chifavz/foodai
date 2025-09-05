@@ -1,24 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useLoading } from '../contexts/LoadingContext';
+import apiService from '../services/api';
 
 function OrderRedirect() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { startLoading, stopLoading, setLoadingError } = useLoading();
   const [cart, setCart] = useState([]);
   const [selectedDelivery, setSelectedDelivery] = useState('');
   const [orderPlaced, setOrderPlaced] = useState(false);
 
-  // Get cart from state or localStorage
+  // Get cart from state or API service
   useEffect(() => {
-    if (location.state?.cart) {
-      setCart(location.state.cart);
-    } else {
-      // Try to get cart from localStorage as fallback
-      const savedCart = localStorage.getItem('currentCart');
-      if (savedCart) {
-        setCart(JSON.parse(savedCart));
+    const loadCart = async () => {
+      if (location.state?.cart) {
+        setCart(location.state.cart);
+      } else {
+        // Try to get cart from API service as fallback
+        try {
+          const savedCart = await apiService.getCart();
+          setCart(savedCart);
+        } catch (error) {
+          console.error('Failed to load cart:', error);
+          setCart([]);
+        }
       }
-    }
+    };
+
+    loadCart();
   }, [location.state]);
 
   const deliveryOptions = [
@@ -68,56 +78,63 @@ function OrderRedirect() {
     return subtotal + deliveryFee + tax;
   };
 
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
     if (!selectedDelivery) {
       alert('Please select a delivery method');
       return;
     }
 
-    // Simulate order placement
-    const newOrder = {
-      id: Date.now(),
-      date: new Date().toISOString().split('T')[0],
-      time: new Date().toLocaleTimeString(),
-      items: cart.map(item => ({
-        name: item.name,
-        chef: item.chef,
-        price: item.price * item.quantity,
-        rating: 0
-      })),
-      total: Math.round(getTotalWithFees()),
-      status: 'Preparing',
-      deliveryMethod: deliveryOptions.find(option => option.id === selectedDelivery)?.name,
-      rated: false
-    };
+    startLoading();
 
-    // Save to order history
-    const existingOrders = JSON.parse(localStorage.getItem('orderHistory') || '[]');
-    const updatedOrders = [newOrder, ...existingOrders];
-    localStorage.setItem('orderHistory', JSON.stringify(updatedOrders));
+    try {
+      // Prepare order data
+      const orderData = {
+        items: cart.map(item => ({
+          name: item.name,
+          chef: item.chef,
+          price: item.price * item.quantity,
+          rating: 0
+        })),
+        total: Math.round(getTotalWithFees()),
+        status: 'Preparing',
+        deliveryMethod: deliveryOptions.find(option => option.id === selectedDelivery)?.name,
+        rated: false
+      };
 
-    // Clear current cart
-    localStorage.removeItem('currentCart');
+      // Place order using API service
+      await apiService.placeOrder(orderData);
 
-    setOrderPlaced(true);
+      // Clear current cart
+      await apiService.clearCart();
 
-    // In real app, this would redirect to external service URLs
-    setTimeout(() => {
-      if (selectedDelivery === 'ubereats') {
-        // window.open('https://ubereats.com/checkout', '_blank');
-        alert('Redirecting to Uber Eats... (Demo mode)');
-      } else if (selectedDelivery === 'doordash') {
+      stopLoading();
+      setOrderPlaced(true);
+
+      // In real app, this would redirect to external service URLs
+      setTimeout(() => {
+        if (selectedDelivery === 'ubereats') {
+          // window.open('https://ubereats.com/checkout', '_blank');
+          alert('Redirecting to Uber Eats... (Demo mode)');
+        } else if (selectedDelivery === 'doordash') {
         // window.open('https://doordash.com/checkout', '_blank');
         alert('Redirecting to DoorDash... (Demo mode)');
       }
       navigate('/history');
     }, 2000);
+    } catch (error) {
+      setLoadingError('Failed to place order. Please try again.');
+    }
   };
 
-  const handleEditOrder = () => {
-    // Save current cart for editing
-    localStorage.setItem('currentCart', JSON.stringify(cart));
-    navigate('/customer');
+  const handleEditOrder = async () => {
+    // Save current cart for editing using API service
+    try {
+      await apiService.saveCart(cart);
+      navigate('/customer');
+    } catch (error) {
+      // Fallback to direct navigation if save fails
+      navigate('/customer');
+    }
   };
 
   if (orderPlaced) {
