@@ -4,18 +4,28 @@
 
 ### ✅ **CRITICAL: PostCSS Configuration Error (FIXED)**
 
-**Problem:** The application was using an incorrect PostCSS plugin for Tailwind CSS:
+**Problem:** The application was using object syntax for PostCSS plugins which can cause the error "It looks like you're trying to use tailwindcss directly as a PostCSS plugin":
 ```javascript
-// INCORRECT (was causing build issues)
-require('@tailwindcss/postcss')
+// INCORRECT (was causing PostCSS plugin issues)
+module.exports = {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {},
+  },
+};
 
 // CORRECT (now fixed)
-require('tailwindcss')
+module.exports = {
+  plugins: [
+    require('tailwindcss'),
+    require('autoprefixer'),
+  ],
+};
 ```
 
-**Impact:** This prevented Tailwind CSS from being processed correctly during the build process.
+**Impact:** This prevented Tailwind CSS from being processed correctly in some environments due to PostCSS plugin loading issues.
 
-**Solution:** Updated `postcss.config.js` to use the correct Tailwind CSS plugin.
+**Solution:** Updated `postcss.config.js` to use the require() array syntax instead of object syntax for PostCSS plugins.
 
 **Verification:** 
 - ✅ Build process works correctly
@@ -74,9 +84,9 @@ npm test ✅ SUCCESS (2/2 test suites passed)
 
 ## Files Modified
 
-1. **postcss.config.js** - Fixed Tailwind CSS plugin configuration
-2. **package.json** & **package-lock.json** - Removed incorrect @tailwindcss/postcss dependency
-3. **src/TailwindTest.test.js** - Added comprehensive Tailwind CSS functionality tests
+1. **postcss.config.js** - Updated to use require() array syntax instead of object syntax for PostCSS plugins
+2. **src/TailwindTest.test.js** - Updated test to verify the new array-based PostCSS configuration
+3. **DEBUG_REPORT.md** - Updated to reflect the PostCSS configuration fix
 
 ## Recommendations
 

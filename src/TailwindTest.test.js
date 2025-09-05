@@ -8,6 +8,12 @@ test('tailwind css is configured correctly', () => {
   const postcssConfig = require('../postcss.config.js');
   expect(postcssConfig).toBeDefined();
   expect(postcssConfig.plugins).toBeDefined();
-  expect(postcssConfig.plugins.tailwindcss).toBeDefined();
-  expect(postcssConfig.plugins.autoprefixer).toBeDefined();
+  expect(Array.isArray(postcssConfig.plugins)).toBe(true);
+  expect(postcssConfig.plugins.length).toBe(2);
+  
+  // Check that tailwindcss and autoprefixer are included
+  const tailwindcss = require('tailwindcss');
+  const autoprefixer = require('autoprefixer');
+  expect(postcssConfig.plugins).toContain(tailwindcss);
+  expect(postcssConfig.plugins).toContain(autoprefixer);
 });
