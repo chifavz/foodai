@@ -2,7 +2,7 @@
 
 ## Overview
 
-The FoodAI frontend has been updated to support connection to the `chifavz/aifoodback` backend. The integration includes a robust API service layer that provides fallback to localStorage when the backend is not available.
+The FoodAI frontend has been enhanced with multiple API integrations including the `chifavz/aifoodback` backend, Yelp Fusion API for restaurant discovery, and menu APIs (ChowNow/OpenMenu) for structured menu data. The integration includes a robust API service layer that provides fallback to localStorage when external services are not available.
 
 ## Backend Connection Configuration
 
@@ -13,6 +13,16 @@ Create a `.env` file in the root directory with the following configuration:
 ```env
 REACT_APP_API_BASE_URL=http://localhost:8000/api
 REACT_APP_BACKEND_URL=https://api.aifoodback.example.com
+
+# External API Integrations
+REACT_APP_YELP_API_KEY=your_yelp_api_key_here
+REACT_APP_CHOWNOW_API_KEY=your_chownow_api_key_here
+REACT_APP_OPENMENU_API_KEY=your_openmenu_api_key_here
+
+# Affiliate Program Configuration
+REACT_APP_AFFILIATE_ID=your_affiliate_id_here
+REACT_APP_UBEREATS_AFFILIATE_ID=your_ubereats_affiliate_id_here
+REACT_APP_DOORDASH_AFFILIATE_ID=your_doordash_affiliate_id_here
 ```
 
 ### API Service
@@ -22,33 +32,46 @@ The application now includes a comprehensive API service (`src/services/api.js`)
 - Automatic backend availability detection
 - Fallback to localStorage when backend is unavailable
 - Consistent error handling and retries
+- **NEW**: Yelp Fusion API integration for restaurant discovery
+- **NEW**: Menu API integration (ChowNow/OpenMenu) for structured menu data
+- **NEW**: Enhanced affiliate workflow with proper tracking
 
 ## API Endpoints
 
-The frontend expects the following REST API endpoints from the backend:
+The frontend now supports multiple API endpoints from different services:
 
-### Health Check
+### Core Backend APIs
+
 - `GET /api/health` - Backend availability check
-
-### User Profile
 - `GET /api/user/profile` - Get user profile
 - `POST /api/user/profile` - Save user profile
-
-### Menu Management
 - `GET /api/menu/items` - Get all menu items
-
-### Cart Operations
 - `GET /api/cart` - Get current cart
 - `POST /api/cart` - Save cart
 - `DELETE /api/cart` - Clear cart
-
-### Order Management
 - `POST /api/orders` - Place new order
 - `GET /api/orders/history` - Get order history
 - `PUT /api/orders/{id}/rating` - Update order rating
-
-### AI Waitress
 - `POST /api/ai/chat` - Send message to AI assistant
+
+### Yelp Fusion API Integration
+
+- `searchRestaurants(location, term, limit)` - Search for restaurants by location
+- `getRestaurantDetails(restaurantId)` - Get detailed restaurant information
+- Automatic fallback to hardcoded restaurant data when API unavailable
+
+### Menu API Integration (ChowNow/OpenMenu)
+
+- `getRestaurantMenu(restaurantId, provider)` - Get structured menu data
+- `searchMenuItems(restaurantId, searchTerm, provider)` - Search menu items
+- Supports multiple providers: 'chownow', 'openmenu'
+- Automatic fallback to demo menu when APIs unavailable
+
+### Affiliate Integration
+
+- Enhanced OrderButton component with affiliate link generation
+- Support for Uber Eats, DoorDash, and Grubhub affiliate programs
+- Automatic tracking and URL generation with affiliate IDs
 
 ## Data Models
 
@@ -158,6 +181,18 @@ When the backend is not available, the application automatically falls back to:
 - Context-aware conversations
 - Profile-based personalization
 - Fallback to local responses
+
+### ✅ External API Integration
+- **NEW**: Yelp Fusion API for restaurant discovery
+- **NEW**: ChowNow/OpenMenu integration for structured menu data
+- **NEW**: Enhanced affiliate workflow with proper tracking
+- Automatic fallback behavior for all external APIs
+
+### ✅ Affiliate Program Integration
+- **NEW**: OrderButton component with affiliate link generation
+- **NEW**: Support for multiple delivery platforms (Uber Eats, DoorDash, Grubhub)
+- **NEW**: Automatic affiliate URL generation with tracking
+- **NEW**: Cart data integration for conversion tracking
 
 ### ✅ Loading States
 - Global loading context
