@@ -90,7 +90,34 @@ class ApiService {
     }
   }
 
-  // Menu Items API with enhanced integration
+  // Restaurant Aggregator - Get meals filtered by user preferences
+  async getMealsFiltered(preferences = {}) {
+    const { cuisine, diet, maxPrice, category, allergens } = preferences;
+    
+    // Build query parameters
+    const params = new URLSearchParams();
+    if (cuisine) params.append('cuisine', cuisine);
+    if (diet) params.append('diet', diet);
+    if (maxPrice) params.append('maxPrice', maxPrice);
+    if (category) params.append('category', category);
+    if (allergens) {
+      if (Array.isArray(allergens)) {
+        allergens.forEach(allergen => params.append('allergens', allergen));
+      } else {
+        params.append('allergens', allergens);
+      }
+    }
+
+    try {
+      const response = await this.request(`/meals?${params.toString()}`);
+      return response.meals || [];
+    } catch (error) {
+      console.log('Failed to get filtered meals from backend, using fallback');
+      return this.getFallbackMeals(preferences);
+    }
+  }
+
+  // Get all available meals (backward compatibility)
   async getMenuItems(restaurantId = null, useExternalApi = false) {
     // Try external menu APIs first if requested
     if (useExternalApi && restaurantId) {
@@ -104,34 +131,72 @@ class ApiService {
       }
     }
 
-    if (!this.isBackendAvailable) {
-      // Fallback to hardcoded menu items
-      return [
-        { id: 1, name: 'Grilled Salmon', price: 28, description: 'Fresh Atlantic salmon with lemon herbs', category: 'Main Course', chef: 'Chef Mario', rating: 4.8, image: '🐟', allergens: ['fish'] },
-        { id: 2, name: 'Caesar Salad', price: 15, description: 'Crisp romaine lettuce with parmesan and croutons', category: 'Appetizer', chef: 'Chef Mario', rating: 4.6, image: '🥗', allergens: ['dairy', 'gluten'] },
-        { id: 3, name: 'Beef Wellington', price: 35, description: 'Tender beef wrapped in puff pastry with mushroom duxelles', category: 'Main Course', chef: 'Chef Isabella', rating: 4.9, image: '🥩', allergens: ['gluten', 'eggs'] },
-        { id: 4, name: 'Chocolate Soufflé', price: 12, description: 'Warm chocolate soufflé with vanilla ice cream', category: 'Dessert', chef: 'Chef Pierre', rating: 4.7, image: '🍰', allergens: ['dairy', 'eggs', 'gluten'] },
-        { id: 5, name: 'Lobster Bisque', price: 18, description: 'Rich and creamy lobster soup with a hint of brandy', category: 'Appetizer', chef: 'Chef Isabella', rating: 4.8, image: '🦞', allergens: ['shellfish', 'dairy'] },
-        { id: 6, name: 'Margherita Pizza', price: 22, description: 'Traditional pizza with fresh mozzarella, tomatoes, and basil', category: 'Main Course', chef: 'Chef Antonio', rating: 4.5, image: '🍕', allergens: ['gluten', 'dairy'] },
-      ];
-    }
-
     try {
-      return await this.request('/menu/items');
+      // Use the new meals endpoint for all available meals
+      const response = await this.request('/meals');
+      return response.meals || [];
     } catch (error) {
-      // Fallback to hardcoded menu items on error
+      console.log('Backend not available, using fallback menu');
+      return this.getFallbackMeals();
+    }
+  }
+
+  // Fallback menu for when backend is not available
+  getFallbackMeals(preferences = {}) {
+    const fallbackMeals = [
+      { id: 1, name: 'Grilled Salmon', price: 28, description: 'Fresh Atlantic salmon with lemon herbs', category: 'Main Course', chef: 'Chef Mario', rating: 4.8, image: '🐟', allergens: ['fish'], cuisine: 'Italian', diet: 'pescatarian', restaurant_name: "Chef Mario's Italian Kitchen" },
+      { id: 2, name: 'Caesar Salad', price: 15, description: 'Crisp romaine lettuce with parmesan and croutons', category: 'Appetizer', chef: 'Chef Mario', rating: 4.6, image: '🥗', allergens: ['dairy', 'gluten'], cuisine: 'Italian', diet: 'vegetarian', restaurant_name: "Chef Mario's Italian Kitchen" },
+      { id: 3, name: 'Beef Wellington', price: 35, description: 'Tender beef wrapped in puff pastry with mushroom duxelles', category: 'Main Course', chef: 'Chef Isabella', rating: 4.9, image: '🥩', allergens: ['gluten', 'eggs'], cuisine: 'French', diet: 'regular', restaurant_name: "Isabella's Fine Dining" },
+      { id: 4, name: 'Chocolate Soufflé', price: 12, description: 'Warm chocolate soufflé with vanilla ice cream', category: 'Dessert', chef: 'Chef Pierre', rating: 4.7, image: '🍰', allergens: ['dairy', 'eggs', 'gluten'], cuisine: 'French', diet: 'vegetarian', restaurant_name: "Isabella's Fine Dining" },
+      { id: 5, name: 'Quinoa Buddha Bowl', price: 18, description: 'Nutritious quinoa bowl with fresh vegetables and tahini dressing', category: 'Main Course', chef: 'Chef Sarah', rating: 4.4, image: '🥙', allergens: ['sesame'], cuisine: 'Vegetarian', diet: 'vegan', restaurant_name: "Garden Fresh Vegetarian" },
+      { id: 6, name: 'Margherita Pizza', price: 22, description: 'Traditional pizza with fresh mozzarella, tomatoes, and basil', category: 'Main Course', chef: 'Chef Antonio', rating: 4.5, image: '🍕', allergens: ['gluten', 'dairy'], cuisine: 'Italian', diet: 'vegetarian', restaurant_name: "Antonio's Pizza Place" },
+    ];
+
+    // Apply simple client-side filtering if backend is not available
+    const { cuisine, diet, maxPrice, category, allergens } = preferences;
+    
+    return fallbackMeals.filter(meal => {
+      if (cuisine && meal.cuisine.toLowerCase() !== cuisine.toLowerCase()) return false;
+      if (diet && meal.diet.toLowerCase() !== diet.toLowerCase()) return false;
+      if (maxPrice && meal.price > parseFloat(maxPrice)) return false;
+      if (category && category !== 'All' && meal.category !== category) return false;
+      if (allergens) {
+        const allergenList = Array.isArray(allergens) ? allergens : [allergens];
+        const hasAllergen = allergenList.some(allergen => 
+          meal.allergens.includes(allergen.toLowerCase())
+        );
+        if (hasAllergen) return false;
+      }
+      return true;
+    });
+  }
+
+  // Restaurant Aggregator - Get partner restaurants
+  async getPartnerRestaurants() {
+    try {
+      return await this.request('/restaurants');
+    } catch (error) {
+      console.log('Failed to get partner restaurants, using fallback');
       return [
-        { id: 1, name: 'Grilled Salmon', price: 28, description: 'Fresh Atlantic salmon with lemon herbs', category: 'Main Course', chef: 'Chef Mario', rating: 4.8, image: '🐟', allergens: ['fish'] },
-        { id: 2, name: 'Caesar Salad', price: 15, description: 'Crisp romaine lettuce with parmesan and croutons', category: 'Appetizer', chef: 'Chef Mario', rating: 4.6, image: '🥗', allergens: ['dairy', 'gluten'] },
-        { id: 3, name: 'Beef Wellington', price: 35, description: 'Tender beef wrapped in puff pastry with mushroom duxelles', category: 'Main Course', chef: 'Chef Isabella', rating: 4.9, image: '🥩', allergens: ['gluten', 'eggs'] },
-        { id: 4, name: 'Chocolate Soufflé', price: 12, description: 'Warm chocolate soufflé with vanilla ice cream', category: 'Dessert', chef: 'Chef Pierre', rating: 4.7, image: '🍰', allergens: ['dairy', 'eggs', 'gluten'] },
-        { id: 5, name: 'Lobster Bisque', price: 18, description: 'Rich and creamy lobster soup with a hint of brandy', category: 'Appetizer', chef: 'Chef Isabella', rating: 4.8, image: '🦞', allergens: ['shellfish', 'dairy'] },
-        { id: 6, name: 'Margherita Pizza', price: 22, description: 'Traditional pizza with fresh mozzarella, tomatoes, and basil', category: 'Main Course', chef: 'Chef Antonio', rating: 4.5, image: '🍕', allergens: ['gluten', 'dairy'] },
+        { id: 1, name: "Chef Mario's Italian Kitchen", cuisine: "Italian", location: "Downtown", partnership_type: "direct" },
+        { id: 2, name: "Isabella's Fine Dining", cuisine: "French", location: "Uptown", partnership_type: "direct" },
+        { id: 3, name: "Antonio's Pizza Place", cuisine: "Italian", location: "Midtown", partnership_type: "direct" },
+        { id: 4, name: "Garden Fresh Vegetarian", cuisine: "Vegetarian", location: "Downtown", partnership_type: "direct" },
+        { id: 5, name: "Sakura Japanese Cuisine", cuisine: "Japanese", location: "Westside", partnership_type: "direct" }
       ];
     }
   }
 
-  // New Yelp integration methods
+  async getPartnerRestaurantDetails(restaurantId) {
+    try {
+      return await this.request(`/restaurants/${restaurantId}`);
+    } catch (error) {
+      console.log('Failed to get restaurant details, using fallback');
+      return null;
+    }
+  }
+
+  // Legacy Yelp integration methods (for backward compatibility)
   async searchRestaurants(location, term = 'restaurants', limit = 20) {
     return await this.yelpService.searchBusinesses(location, term, limit);
   }

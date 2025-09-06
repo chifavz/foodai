@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useLoading } from '../contexts/LoadingContext';
 import DarkModeToggle from './DarkModeToggle';
 import { MenuItemSkeleton } from './SkeletonLoader';
@@ -8,20 +8,14 @@ import apiService from '../services/api';
 
 function CustomerInterface() {
   const navigate = useNavigate();
-  const location = useLocation();
   const { startLoading, stopLoading, setLoadingError } = useLoading();
   const [cart, setCart] = useState([]);
   const [menuItems, setMenuItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedItem, setSelectedItem] = useState(null);
   const [isLoadingMenu, setIsLoadingMenu] = useState(true);
-
   const [mealPreferences, setMealPreferences] = useState({});
   const [showPreferences, setShowPreferences] = useState(false);
-=======
-  const [currentRestaurant, setCurrentRestaurant] = useState(null);
-  const [fromDiscovery, setFromDiscovery] = useState(false);
-
 
   // Load meals based on preferences
   const loadMealsWithPreferences = async (preferences = {}) => {
@@ -41,50 +35,12 @@ function CustomerInterface() {
   useEffect(() => {
     const loadData = async () => {
       startLoading();
-      
-      // Check if we're coming from restaurant discovery
-      const restaurantData = location.state?.restaurant;
-      const discoveryMenu = location.state?.menu;
-      const isFromDiscovery = location.state?.fromDiscovery;
-      
-      setFromDiscovery(isFromDiscovery || false);
-      setCurrentRestaurant(restaurantData || null);
-      
       try {
-
         const [meals, savedCart] = await Promise.all([
           apiService.getMealsFiltered(), // Load all meals initially
           apiService.getCart()
         ]);
         setMenuItems(meals);
-
-        let items = [];
-        
-        // If we have restaurant-specific menu data, use it
-        if (discoveryMenu && discoveryMenu.categories) {
-          items = apiService.menuApiService.getAllMenuItems(discoveryMenu);
-        } else if (restaurantData && !location.state?.noMenuAvailable) {
-          // Try to load menu for the specific restaurant
-          try {
-            const restaurantMenu = await apiService.getRestaurantMenu(restaurantData.id);
-            if (restaurantMenu && restaurantMenu.categories) {
-              items = apiService.menuApiService.getAllMenuItems(restaurantMenu);
-            } else {
-              // Fall back to default menu if restaurant menu not available
-              items = await apiService.getMenuItems();
-            }
-          } catch (error) {
-            console.log('Failed to load restaurant menu, using default');
-            items = await apiService.getMenuItems();
-          }
-        } else {
-          // Default menu loading
-          items = await apiService.getMenuItems();
-        }
-        
-        const savedCart = await apiService.getCart();
-        
-        setMenuItems(items); main
         setCart(savedCart);
         stopLoading();
       } catch (error) {
@@ -95,7 +51,7 @@ function CustomerInterface() {
     };
 
     loadData();
-  }, [startLoading, stopLoading, setLoadingError, location.state]);
+  }, [startLoading, stopLoading, setLoadingError]);
 
   // Handle preference changes
   const handlePreferencesChange = (newPreferences) => {
@@ -163,10 +119,10 @@ function CustomerInterface() {
         <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full max-h-screen overflow-y-auto border border-gray-200 dark:border-gray-700">
           <div className="p-6">
             <div className="flex justify-between items-start mb-4">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white">{item.name}</h3>
-              <button
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{item.name}</h3>
+              <button 
                 onClick={onClose}
-                className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-xl"
+                className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 text-2xl"
               >
                 ×
               </button>
@@ -258,35 +214,16 @@ function CustomerInterface() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center">
-
-              <button
-                onClick={() => navigate('/')}
-
               <button 
-                onClick={() => fromDiscovery ? navigate('/discover') : navigate('/')}
-
+                onClick={() => navigate('/')}
                 className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 mr-4"
               >
                 ← Back
               </button>
-              <div>
-
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">🤖 AI Meal Matching</h1>
-                <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">
-                  Discover perfect meals from our partner restaurants
-                </p>
-
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  🍴 {currentRestaurant ? `${currentRestaurant.name} Menu` : 'Browse Menu'}
-                </h1>
-                {currentRestaurant && (
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    📍 {currentRestaurant.location?.address1}, {currentRestaurant.location?.city} • 
-                    {currentRestaurant.rating}⭐ • {currentRestaurant.price || 'Price varies'}
-                  </p>
-                )}
-
-              </div>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">🤖 AI Meal Matching</h1>
+              <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">
+                Discover perfect meals from our partner restaurants
+              </p>
             </div>
             <div className="flex items-center space-x-4">
               <button
@@ -300,14 +237,6 @@ function CustomerInterface() {
                 🎯 AI Preferences
               </button>
               <DarkModeToggle />
-              {fromDiscovery && (
-                <button 
-                  onClick={() => navigate('/discover')}
-                  className="bg-purple-600 dark:bg-purple-700 text-white px-4 py-2 rounded-lg hover:bg-purple-700 dark:hover:bg-purple-600 transition-colors"
-                >
-                  🔍 Discover More
-                </button>
-              )}
               <button 
                 onClick={() => navigate('/profile-setup')}
                 className="bg-green-600 dark:bg-green-700 text-white px-4 py-2 rounded-lg hover:bg-green-700 dark:hover:bg-green-600 transition-colors"
@@ -386,10 +315,12 @@ function CustomerInterface() {
                 )}
               </div>
             </div>
+            </div>
 
-            {/* Menu Items Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            {/* Menu Items */}
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {isLoadingMenu ? (
+                // Show skeleton loaders while loading
                 Array.from({ length: 6 }).map((_, index) => (
                   <MenuItemSkeleton key={index} />
                 ))
@@ -461,12 +392,12 @@ function CustomerInterface() {
             </div>
 
             {/* No Results */}
-            {filteredItems.length === 0 && !isLoadingMenu && (
+            {filteredItems.length === 0 && (
               <div className="text-center py-12">
                 <div className="text-6xl mb-4">🔍</div>
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No meals found</h3>
-                <p className="text-gray-600 dark:text-gray-400 mb-4">
-                  Try adjusting your preferences or search terms
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">No dishes found</h3>
+                <p className="text-gray-600 mb-4">
+                  Try adjusting your search terms or category filter
                 </p>
                 <button
                   onClick={() => {
@@ -491,7 +422,7 @@ function CustomerInterface() {
               </p>
               
               {cart.length === 0 ? (
-                <p className="text-gray-500 dark:text-gray-400 text-center py-8">Your selection is empty</p>
+                <p className="text-gray-500 dark:text-gray-400 text-center py-8">Your cart is empty</p>
               ) : (
                 <>
                   <div className="space-y-4 mb-6">
