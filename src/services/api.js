@@ -150,6 +150,97 @@ class ApiService {
     return this.menuApiService.searchMenuItems(menu, searchTerm);
   }
 
+  // Meal Finder API - Filter meals by preferences
+  async getMeals(params = {}) {
+    const { cuisine, diet, maxPrice, category } = params;
+    
+    try {
+      // Get all available menu items
+      const allItems = await this.getMenuItems();
+      
+      // Filter items based on preferences
+      let filteredItems = allItems.filter(item => {
+        // Filter by cuisine (check if item name, description, or chef specialty matches)
+        if (cuisine) {
+          const cuisineMatch = 
+            item.name.toLowerCase().includes(cuisine.toLowerCase()) ||
+            item.description.toLowerCase().includes(cuisine.toLowerCase()) ||
+            item.chef.toLowerCase().includes(cuisine.toLowerCase());
+          if (!cuisineMatch) return false;
+        }
+        
+        // Filter by dietary restrictions
+        if (diet) {
+          const dietLower = diet.toLowerCase();
+          
+          // Check if item is suitable for dietary restriction
+          if (dietLower === 'vegan') {
+            // Vegan items should not contain dairy, eggs, or meat-related allergens
+            const nonVeganAllergens = ['dairy', 'eggs', 'fish', 'shellfish'];
+            if (item.allergens && item.allergens.some(allergen => nonVeganAllergens.includes(allergen))) {
+              return false;
+            }
+            // Also check description for meat/dairy keywords
+            const meatKeywords = ['beef', 'chicken', 'fish', 'salmon', 'lobster', 'cheese', 'butter', 'cream'];
+            if (meatKeywords.some(keyword => item.description.toLowerCase().includes(keyword))) {
+              return false;
+            }
+          } else if (dietLower === 'vegetarian') {
+            // Vegetarian items should not contain fish or meat
+            const nonVegetarianAllergens = ['fish', 'shellfish'];
+            if (item.allergens && item.allergens.some(allergen => nonVegetarianAllergens.includes(allergen))) {
+              return false;
+            }
+            // Check description for meat/fish keywords
+            const meatKeywords = ['beef', 'chicken', 'fish', 'salmon', 'lobster'];
+            if (meatKeywords.some(keyword => item.description.toLowerCase().includes(keyword))) {
+              return false;
+            }
+          } else if (dietLower === 'gluten-free') {
+            // Gluten-free items should not contain gluten
+            if (item.allergens && item.allergens.includes('gluten')) {
+              return false;
+            }
+          }
+        }
+        
+        // Filter by maximum price
+        if (maxPrice && item.price > parseFloat(maxPrice)) {
+          return false;
+        }
+        
+        // Filter by category if specified
+        if (category && item.category.toLowerCase() !== category.toLowerCase()) {
+          return false;
+        }
+        
+        return true;
+      });
+      
+      // Sort by rating (highest first) and price (lowest first for same rating)
+      filteredItems.sort((a, b) => {
+        if (b.rating !== a.rating) {
+          return b.rating - a.rating;
+        }
+        return a.price - b.price;
+      });
+      
+      return {
+        meals: filteredItems,
+        total: filteredItems.length,
+        filters: {
+          cuisine,
+          diet,
+          maxPrice,
+          category
+        }
+      };
+    } catch (error) {
+      console.error('Error filtering meals:', error);
+      throw error;
+    }
+  }
+
   // Cart API
   async saveCart(cart) {
     if (!this.isBackendAvailable) {
@@ -399,6 +490,14 @@ class ApiService {
       } else {
         return "I don't see a profile set up for you yet. Would you like to set up your dining preferences? It helps me give you much better recommendations!";
       }
+    } else if (message.includes('find') || message.includes('recommend') || message.includes('suggest') || message.includes('perfect')) {
+      if (hasProfile) {
+        return `Based on your preferences for ${userProfile.cuisinePreferences?.join(', ') || 'various cuisines'} ${userProfile.dietaryRestrictions?.length > 0 ? `and ${userProfile.dietaryRestrictions.join(', ')} diet` : ''}, I'd be happy to find perfect meals for you! Try our Meal Finder feature where I can filter dishes by your exact preferences including cuisine, dietary needs, and budget. Would you like me to guide you there?`;
+      } else {
+        return "I'd love to recommend perfect meals for you! Our Meal Finder feature lets you specify your cuisine preferences, dietary restrictions, and budget to find dishes tailored just for you. You can also set up your profile first for even better personalized recommendations!";
+      }
+    } else if (message.includes('meal finder') || message.includes('filter') || message.includes('search')) {
+      return "Great choice! The Meal Finder is perfect for discovering dishes that match your exact preferences. You can filter by cuisine type (Italian, Asian, etc.), dietary needs (vegan, vegetarian, gluten-free), budget range, and meal type. I'll provide personalized recommendations based on your selections. Ready to find your perfect meal?";
     } else {
       return "That's an interesting question! I'm here to help you with menu information, recommendations, dietary requirements, and placing orders. What would you like to know more about?";
     }

@@ -78,6 +78,12 @@ function LandingPage() {
                 </p>
                 <div className="space-y-3">
                   <button
+                    onClick={() => navigate('/meal-finder')}
+                    className="w-full bg-orange-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-orange-700 transition-colors duration-300"
+                  >
+                    🎯 Find Perfect Meals
+                  </button>
+                  <button
                     onClick={() => navigate('/profile-setup')}
                     className="w-full bg-green-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-green-700 transition-colors duration-300"
                   >
