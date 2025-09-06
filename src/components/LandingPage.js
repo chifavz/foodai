@@ -60,7 +60,7 @@ function LandingPage() {
                   Browse today's available dishes from our talented chefs with detailed information and ratings.
                 </p>
                 <button
-                  onClick={() => navigate('/chef')}
+                  onClick={() => navigate('/menu')}
                   className="w-full bg-orange-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-orange-700 transition-colors duration-300"
                 >
                   View Today's Menu
