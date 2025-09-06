@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLoading } from '../contexts/LoadingContext';
 import DarkModeToggle from './DarkModeToggle';
+import { MenuItemSkeleton } from './SkeletonLoader';
 import apiService from '../services/api';
 
 function CustomerInterface() {
@@ -11,10 +12,12 @@ function CustomerInterface() {
   const [menuItems, setMenuItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedItem, setSelectedItem] = useState(null);
+  const [isLoadingMenu, setIsLoadingMenu] = useState(true);
 
   // Load menu items and cart on component mount
   useEffect(() => {
     const loadData = async () => {
+      setIsLoadingMenu(true);
       startLoading();
       try {
         const [items, savedCart] = await Promise.all([
@@ -26,6 +29,8 @@ function CustomerInterface() {
         stopLoading();
       } catch (error) {
         setLoadingError('Failed to load menu items');
+      } finally {
+        setIsLoadingMenu(false);
       }
     };
 
@@ -265,40 +270,47 @@ function CustomerInterface() {
 
             {/* Menu Items */}
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredItems.map(item => (
-                <div key={item.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden border border-gray-200 dark:border-gray-700">
-                  <div className="p-6">
-                    <div className="text-4xl text-center mb-4">{item.image}</div>
-                    <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-2">{item.name}</h3>
-                    <p className="text-gray-600 dark:text-gray-400 text-sm mb-3 line-clamp-2">{item.description}</p>
-                    
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-gray-500 dark:text-gray-400 text-sm">by {item.chef}</span>
-                      <div className="flex items-center">
-                        <span className="text-yellow-400">⭐</span>
-                        <span className="text-gray-600 dark:text-gray-400 text-sm ml-1">{item.rating}</span>
+              {isLoadingMenu ? (
+                // Show skeleton loaders while loading
+                Array.from({ length: 6 }).map((_, index) => (
+                  <MenuItemSkeleton key={index} />
+                ))
+              ) : (
+                filteredItems.map(item => (
+                  <div key={item.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden border border-gray-200 dark:border-gray-700">
+                    <div className="p-6">
+                      <div className="text-4xl text-center mb-4">{item.image}</div>
+                      <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-2">{item.name}</h3>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm mb-3 line-clamp-2">{item.description}</p>
+                      
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-gray-500 dark:text-gray-400 text-sm">by {item.chef}</span>
+                        <div className="flex items-center">
+                          <span className="text-yellow-400">⭐</span>
+                          <span className="text-gray-600 dark:text-gray-400 text-sm ml-1">{item.rating}</span>
+                        </div>
                       </div>
-                    </div>
-                    
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">${item.price}</span>
+                      
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">${item.price}</span>
+                        <button
+                          onClick={() => setSelectedItem(item)}
+                          className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm font-medium"
+                        >
+                          View Details
+                        </button>
+                      </div>
+                      
                       <button
-                        onClick={() => setSelectedItem(item)}
-                        className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm font-medium"
+                        onClick={() => addToCart(item)}
+                        className="w-full bg-blue-600 dark:bg-blue-700 text-white py-2 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
                       >
-                        View Details
+                        Add to Cart
                       </button>
                     </div>
-                    
-                    <button
-                      onClick={() => addToCart(item)}
-                      className="w-full bg-blue-600 dark:bg-blue-700 text-white py-2 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
-                    >
-                      Add to Cart
-                    </button>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
 
             {/* No Results */}
