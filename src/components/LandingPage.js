@@ -60,7 +60,7 @@ function LandingPage() {
                   Browse today's available dishes from our talented chefs with detailed information and ratings.
                 </p>
                 <button
-                  onClick={() => navigate('/chef')}
+                  onClick={() => navigate('/menu')}
                   className="w-full bg-orange-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-orange-700 transition-colors duration-300"
                 >
                   View Today's Menu
@@ -77,6 +77,12 @@ function LandingPage() {
                   Discover amazing dishes, chat with our AI waitress, and enjoy personalized dining experiences.
                 </p>
                 <div className="space-y-3">
+                  <button
+                    onClick={() => navigate('/discover')}
+                    className="w-full bg-purple-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-purple-700 transition-colors duration-300"
+                  >
+                    🔍 Discover Restaurants
+                  </button>
                   <button
                     onClick={() => navigate('/profile-setup')}
                     className="w-full bg-green-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-green-700 transition-colors duration-300"

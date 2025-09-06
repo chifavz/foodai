@@ -393,11 +393,11 @@ class ApiService {
     }
   }
 
-  // AI Waitress API
+  // AI Waitress API with enhanced restaurant discovery
   async sendAIMessage(message, context = {}) {
     if (!this.isBackendAvailable) {
-      // Fallback to local AI responses (existing logic)
-      return this.getLocalAIResponse(message, context);
+      // Enhanced fallback with restaurant discovery
+      return this.getEnhancedAIResponse(message, context);
     }
 
     try {
@@ -407,9 +407,100 @@ class ApiService {
       });
       return result.response;
     } catch (error) {
-      // Fallback to local AI responses on error
-      return this.getLocalAIResponse(message, context);
+      // Fallback to enhanced AI responses on error
+      return this.getEnhancedAIResponse(message, context);
     }
+  }
+
+  async getEnhancedAIResponse(userMessage, context = {}) {
+    const message = userMessage.toLowerCase();
+    
+    // Check if this is a restaurant discovery request
+    if (this.isRestaurantDiscoveryRequest(message)) {
+      return this.handleRestaurantDiscovery(userMessage, context);
+    }
+
+    // Fall back to local AI responses for other requests
+    return this.getLocalAIResponse(userMessage, context);
+  }
+
+  isRestaurantDiscoveryRequest(message) {
+    const restaurantKeywords = ['restaurant', 'place to eat', 'dining', 'eatery', 'cafe', 'bistro'];
+    const locationKeywords = ['nearby', 'near me', 'around', 'location', 'area'];
+    const cuisineKeywords = ['italian', 'chinese', 'mexican', 'thai', 'indian', 'french', 'japanese', 'korean', 'pizza', 'sushi', 'burger'];
+    const discoveryKeywords = ['find', 'search', 'looking for', 'recommend', 'suggest', 'discover'];
+
+    const hasRestaurantKeyword = restaurantKeywords.some(keyword => message.includes(keyword));
+    const hasLocationKeyword = locationKeywords.some(keyword => message.includes(keyword));
+    const hasCuisineKeyword = cuisineKeywords.some(keyword => message.includes(keyword));
+    const hasDiscoveryKeyword = discoveryKeywords.some(keyword => message.includes(keyword));
+
+    return ((hasRestaurantKeyword || hasCuisineKeyword) && (hasLocationKeyword || hasDiscoveryKeyword));
+  }
+
+  async handleRestaurantDiscovery(userMessage, context = {}) {
+    try {
+      // Extract location and cuisine from the message
+      const location = this.extractLocation(userMessage) || 'downtown';
+      const cuisine = this.extractCuisine(userMessage) || 'restaurants';
+
+      // Search for restaurants using Yelp service
+      const restaurants = await this.searchRestaurants(location, cuisine, 5);
+
+      if (restaurants && restaurants.length > 0) {
+        const restaurantList = restaurants.map((restaurant, index) => 
+          `${index + 1}. **${restaurant.name}** (${restaurant.rating}⭐) - ${restaurant.categories?.join(', ') || cuisine}\n   📍 ${restaurant.location?.address1 || 'Address not available'}\n   💰 ${restaurant.price || 'Price not available'}`
+        ).join('\n\n');
+
+        return `Great! I found some excellent ${cuisine} restaurants ${location}:\n\n${restaurantList}\n\nWould you like to see the menu for any of these restaurants? Just let me know which one interests you!`;
+      } else {
+        return `I'm sorry, I couldn't find specific restaurants in that area right now. However, I can show you our current menu with some amazing dishes! We have Italian options like Margherita Pizza, fresh Grilled Salmon, and more. Would you like to browse our available dishes?`;
+      }
+    } catch (error) {
+      console.error('Restaurant discovery failed:', error);
+      return `I'd love to help you find restaurants! While I search for options, would you like to browse our current menu? We have some fantastic dishes available right now.`;
+    }
+  }
+
+  extractLocation(message) {
+    // Simple location extraction - in a real app this would be more sophisticated
+    const locationPatterns = [
+      /nearby|near me|around/i,
+      /in ([a-zA-Z\s]+)/i,
+      /at ([a-zA-Z\s]+)/i,
+      /downtown|city center|uptown/i
+    ];
+
+    for (const pattern of locationPatterns) {
+      const match = message.match(pattern);
+      if (match) {
+        if (match[1]) return match[1].trim();
+        return 'nearby';
+      }
+    }
+    return null;
+  }
+
+  extractCuisine(message) {
+    const cuisines = {
+      'italian': ['italian', 'pizza', 'pasta', 'lasagna'],
+      'chinese': ['chinese', 'dim sum', 'wok'],
+      'mexican': ['mexican', 'tacos', 'burrito', 'quesadilla'],
+      'thai': ['thai', 'pad thai', 'curry'],
+      'indian': ['indian', 'curry', 'naan', 'biryani'],
+      'japanese': ['japanese', 'sushi', 'ramen', 'tempura'],
+      'french': ['french', 'bistro', 'croissant'],
+      'american': ['burger', 'barbecue', 'bbq', 'steak'],
+      'korean': ['korean', 'kimchi', 'bulgogi']
+    };
+
+    for (const [cuisine, keywords] of Object.entries(cuisines)) {
+      if (keywords.some(keyword => message.includes(keyword))) {
+        return cuisine;
+      }
+    }
+    
+    return 'restaurants';
   }
 
   getLocalAIResponse(userMessage, context = {}) {
@@ -442,6 +533,16 @@ class ApiService {
         "Our chefs are amazing! Each one specializes in different cuisines and brings unique flair to their dishes. Would you like to know about a specific chef?",
         "We work with verified chefs who are passionate about their craft! They're always happy to accommodate special requests when possible.",
         "Our chefs love connecting with food lovers! They often share cooking tips and the inspiration behind their dishes. Would you like to know more about any specific chef?"
+      ],
+      restaurants: [
+        "I'd love to help you discover amazing restaurants! I can search for places based on your location and preferences. What type of cuisine or location are you interested in?",
+        "Great! I can help you find fantastic restaurants nearby. What kind of food are you craving, and where are you located?",
+        "Perfect! Let me help you discover some wonderful dining options. Tell me your location and what type of restaurant you're looking for!"
+      ],
+      discovery: [
+        "I can help you explore restaurants and their menus! Once you find a restaurant you like, I can show you their full menu and help you decide what to order.",
+        "Let's start your culinary journey! I can search for restaurants, show you their menus, and guide you through ordering from your favorites.",
+        "I'm here to make restaurant discovery easy! From finding the perfect spot to browsing menus and placing orders, I've got you covered."
       ]
     };
 
@@ -450,6 +551,10 @@ class ApiService {
         return `Hello ${userProfile.name}! I'm Sofia, your AI waitress. Based on your profile, I can give you personalized recommendations. How can I help you today?`;
       }
       return aiResponses.greeting[Math.floor(Math.random() * aiResponses.greeting.length)];
+    } else if (message.includes('restaurant') || message.includes('place to eat') || message.includes('dining') || (message.includes('find') && (message.includes('italian') || message.includes('chinese') || message.includes('mexican') || message.includes('nearby') || message.includes('location')))) {
+      return aiResponses.restaurants[Math.floor(Math.random() * aiResponses.restaurants.length)];
+    } else if (message.includes('discover') || message.includes('explore') || message.includes('browse') || message.includes('search')) {
+      return aiResponses.discovery[Math.floor(Math.random() * aiResponses.discovery.length)];
     } else if (message.includes('menu') || message.includes('food') || message.includes('dish')) {
       return aiResponses.menu[Math.floor(Math.random() * aiResponses.menu.length)];
     } else if (message.includes('allerg') || message.includes('diet') || message.includes('vegetarian') || message.includes('vegan')) {
