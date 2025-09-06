@@ -18,7 +18,6 @@ function CustomerInterface() {
 
   const [mealPreferences, setMealPreferences] = useState({});
   const [showPreferences, setShowPreferences] = useState(false);
-=======
   const [currentRestaurant, setCurrentRestaurant] = useState(null);
   const [fromDiscovery, setFromDiscovery] = useState(false);
 
@@ -44,7 +43,6 @@ function CustomerInterface() {
       
       // Check if we're coming from restaurant discovery
       const restaurantData = location.state?.restaurant;
-      const discoveryMenu = location.state?.menu;
       const isFromDiscovery = location.state?.fromDiscovery;
       
       setFromDiscovery(isFromDiscovery || false);
@@ -57,34 +55,6 @@ function CustomerInterface() {
           apiService.getCart()
         ]);
         setMenuItems(meals);
-
-        let items = [];
-        
-        // If we have restaurant-specific menu data, use it
-        if (discoveryMenu && discoveryMenu.categories) {
-          items = apiService.menuApiService.getAllMenuItems(discoveryMenu);
-        } else if (restaurantData && !location.state?.noMenuAvailable) {
-          // Try to load menu for the specific restaurant
-          try {
-            const restaurantMenu = await apiService.getRestaurantMenu(restaurantData.id);
-            if (restaurantMenu && restaurantMenu.categories) {
-              items = apiService.menuApiService.getAllMenuItems(restaurantMenu);
-            } else {
-              // Fall back to default menu if restaurant menu not available
-              items = await apiService.getMenuItems();
-            }
-          } catch (error) {
-            console.log('Failed to load restaurant menu, using default');
-            items = await apiService.getMenuItems();
-          }
-        } else {
-          // Default menu loading
-          items = await apiService.getMenuItems();
-        }
-        
-        const savedCart = await apiService.getCart();
-        
-        setMenuItems(items); main
         setCart(savedCart);
         stopLoading();
       } catch (error) {
@@ -258,24 +228,13 @@ function CustomerInterface() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center">
-
-              <button
-                onClick={() => navigate('/')}
-
               <button 
                 onClick={() => fromDiscovery ? navigate('/discover') : navigate('/')}
-
                 className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 mr-4"
               >
                 ← Back
               </button>
               <div>
-
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">🤖 AI Meal Matching</h1>
-                <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">
-                  Discover perfect meals from our partner restaurants
-                </p>
-
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                   🍴 {currentRestaurant ? `${currentRestaurant.name} Menu` : 'Browse Menu'}
                 </h1>
@@ -285,7 +244,6 @@ function CustomerInterface() {
                     {currentRestaurant.rating}⭐ • {currentRestaurant.price || 'Price varies'}
                   </p>
                 )}
-
               </div>
             </div>
             <div className="flex items-center space-x-4">
