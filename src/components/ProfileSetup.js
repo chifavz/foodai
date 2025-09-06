@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLoading } from '../contexts/LoadingContext';
+import DarkModeToggle from './DarkModeToggle';
 import apiService from '../services/api';
 
 function ProfileSetup() {
@@ -13,7 +14,8 @@ function ProfileSetup() {
     cuisinePreferences: [],
     goals: [],
     budgetRange: '',
-    mealFrequency: ''
+    mealFrequency: '',
+    servicePreference: 'dine-in'  // New field for dining preference
   });
 
   const dietaryOptions = [
@@ -30,6 +32,12 @@ function ProfileSetup() {
 
   const goalOptions = [
     'Weight Loss', 'Muscle Gain', 'Healthy Eating', 'Energy Boost', 'Heart Health'
+  ];
+
+  const serviceOptions = [
+    { value: 'dine-in', label: 'Dine-In', icon: '🍽️', description: 'Enjoy meals at the restaurant' },
+    { value: 'delivery', label: 'Delivery', icon: '🚗', description: 'Have food delivered to you' },
+    { value: 'pickup', label: 'Pickup', icon: '🥡', description: 'Order ahead and pickup' }
   ];
 
   const handleArrayToggle = (field, value) => {
@@ -68,29 +76,30 @@ function ProfileSetup() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
       {/* Header */}
-      <header className="bg-white shadow-sm">
+      <header className="bg-white dark:bg-gray-800 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center">
               <button 
                 onClick={() => navigate('/')}
-                className="text-blue-600 hover:text-blue-700 mr-4"
+                className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 mr-4"
               >
                 ← Back
               </button>
-              <h1 className="text-2xl font-bold text-gray-900">🍽️ Profile Setup</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">🍽️ Profile Setup</h1>
             </div>
+            <DarkModeToggle />
           </div>
         </div>
       </header>
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-lg shadow-sm p-8">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 sm:p-8 border border-gray-200 dark:border-gray-700">
           <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Personalize Your Dining Experience</h2>
-            <p className="text-gray-600">Tell us about your preferences so our AI can recommend the perfect meals for you!</p>
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-4">Personalize Your Dining Experience</h2>
+            <p className="text-gray-600 dark:text-gray-400">Tell us about your preferences so our AI can recommend the perfect meals for you!</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-8">
@@ -235,6 +244,31 @@ function ProfileSetup() {
                 <option value="monthly">Monthly</option>
                 <option value="special-occasions">Special occasions only</option>
               </select>
+            </div>
+
+            {/* Service Preference */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Preferred Dining Style
+              </label>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {serviceOptions.map(option => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => handleInputChange('servicePreference', option.value)}
+                    className={`p-4 rounded-lg border-2 transition-all ${
+                      profile.servicePreference === option.value
+                        ? 'border-blue-600 bg-blue-50 text-blue-900'
+                        : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="text-3xl mb-2">{option.icon}</div>
+                    <div className="font-semibold">{option.label}</div>
+                    <div className="text-sm mt-1 opacity-75">{option.description}</div>
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Submit Button */}

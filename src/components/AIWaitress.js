@@ -24,6 +24,57 @@ function AIWaitress() {
     scrollToBottom();
   }, [messages]);
 
+  // Get contextual smart prompts based on time of day and user behavior
+  const getSmartPrompts = () => {
+    const hour = new Date().getHours();
+    const isBreakfast = hour >= 6 && hour < 11;
+    const isLunch = hour >= 11 && hour < 16;
+    const isDinner = hour >= 16 && hour < 22;
+    const isLateNight = hour >= 22 || hour < 6;
+
+    let timeBasedPrompts = [];
+    
+    if (isBreakfast) {
+      timeBasedPrompts = [
+        "What's good for breakfast?",
+        "Something light to start the day?",
+        "Quick breakfast options?",
+      ];
+    } else if (isLunch) {
+      timeBasedPrompts = [
+        "What's popular for lunch?",
+        "Something quick for lunch?", 
+        "Light lunch recommendations?",
+      ];
+    } else if (isDinner) {
+      timeBasedPrompts = [
+        "What's perfect for dinner?",
+        "Show me chef specialties",
+        "Something hearty for dinner?",
+      ];
+    } else if (isLateNight) {
+      timeBasedPrompts = [
+        "Any late-night options?",
+        "Something light and easy?",
+        "Quick bite recommendations?",
+      ];
+    }
+
+    // Base prompts that work anytime
+    const basePrompts = [
+      "Give me personalized recommendations",
+      "Any vegetarian options?",
+      "What's trending today?",
+      "Help me with allergies",
+      "Show me chef specials"
+    ];
+
+    // Mix time-based and base prompts
+    return [...timeBasedPrompts.slice(0, 2), ...basePrompts.slice(0, 3)];
+  };
+
+  const quickQuestions = getSmartPrompts();
+
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
 
@@ -80,14 +131,6 @@ function AIWaitress() {
       handleSendMessage();
     }
   };
-
-  const quickQuestions = [
-    "What's popular today?",
-    "Give me personalized recommendations",
-    "Any vegetarian options?",
-    "Show me my profile preferences",
-    "Help me place an order"
-  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-100 to-pink-100">

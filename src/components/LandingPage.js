@@ -14,7 +14,18 @@ function LandingPage() {
               <h1 className="text-3xl font-bold text-gray-900">🍽️ FoodAI</h1>
             </div>
             <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-600">Welcome to the Future of Dining</span>
+              <button
+                onClick={() => navigate('/login')}
+                className="text-gray-600 hover:text-gray-900 font-medium"
+              >
+                Sign In
+              </button>
+              <button
+                onClick={() => navigate('/signup')}
+                className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors font-medium"
+              >
+                Sign Up
+              </button>
             </div>
           </div>
         </div>
