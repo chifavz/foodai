@@ -62,12 +62,17 @@ function AIWaitress() {
 
     // Base prompts that work anytime
     const basePrompts = [
+
       "Find perfect meals for me",
       "Give me personalized recommendations", 
+
+      "Find Italian restaurants nearby",
+      "Give me personalized recommendations",
+
       "Any vegetarian options?",
-      "What's trending today?",
+      "Discover restaurants in downtown",
       "Help me with allergies",
-      "Show me chef specials"
+      "What's trending today?"
     ];
 
     // Mix time-based and base prompts
@@ -110,6 +115,30 @@ function AIWaitress() {
       
       setMessages(prev => [...prev, aiMessage]);
       setIsTyping(false);
+
+      // Check if this response includes restaurant recommendations and offer discovery option
+      if (aiResponse.includes('restaurants') && (aiResponse.includes('found') || aiResponse.includes('search'))) {
+        setTimeout(() => {
+          const discoveryMessage = {
+            id: messages.length + 3,
+            type: 'ai',
+            content: "Would you like to explore these restaurants in more detail? I can show you a full list with photos, reviews, and menus!",
+            timestamp: new Date().toLocaleTimeString(),
+            actions: [
+              {
+                label: "🔍 Discover Restaurants",
+                action: () => navigate('/discover')
+              },
+              {
+                label: "📋 Browse Current Menu",
+                action: () => navigate('/customer')
+              }
+            ]
+          };
+          setMessages(prev => [...prev, discoveryMessage]);
+        }, 1000);
+      }
+      
     } catch (error) {
       console.error('Failed to get AI response:', error);
       
@@ -200,7 +229,20 @@ function AIWaitress() {
                       <span className="font-semibold text-sm">Sofia</span>
                     </div>
                   )}
-                  <p className="text-sm">{message.content}</p>
+                  <p className="text-sm whitespace-pre-line">{message.content}</p>
+                  {message.actions && (
+                    <div className="mt-3 space-y-2">
+                      {message.actions.map((action, index) => (
+                        <button
+                          key={index}
+                          onClick={action.action}
+                          className="block w-full text-left px-3 py-2 bg-purple-600 text-white text-xs rounded-md hover:bg-purple-700 transition-colors"
+                        >
+                          {action.label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   <p className={`text-xs mt-1 ${
                     message.type === 'user' ? 'text-blue-100' : 'text-gray-500'
                   }`}>

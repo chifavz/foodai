@@ -90,7 +90,34 @@ class ApiService {
     }
   }
 
-  // Menu Items API with enhanced integration
+  // Restaurant Aggregator - Get meals filtered by user preferences
+  async getMealsFiltered(preferences = {}) {
+    const { cuisine, diet, maxPrice, category, allergens } = preferences;
+    
+    // Build query parameters
+    const params = new URLSearchParams();
+    if (cuisine) params.append('cuisine', cuisine);
+    if (diet) params.append('diet', diet);
+    if (maxPrice) params.append('maxPrice', maxPrice);
+    if (category) params.append('category', category);
+    if (allergens) {
+      if (Array.isArray(allergens)) {
+        allergens.forEach(allergen => params.append('allergens', allergen));
+      } else {
+        params.append('allergens', allergens);
+      }
+    }
+
+    try {
+      const response = await this.request(`/meals?${params.toString()}`);
+      return response.meals || [];
+    } catch (error) {
+      console.log('Failed to get filtered meals from backend, using fallback');
+      return this.getFallbackMeals(preferences);
+    }
+  }
+
+  // Get all available meals (backward compatibility)
   async getMenuItems(restaurantId = null, useExternalApi = false) {
     // Try external menu APIs first if requested
     if (useExternalApi && restaurantId) {
@@ -104,34 +131,72 @@ class ApiService {
       }
     }
 
-    if (!this.isBackendAvailable) {
-      // Fallback to hardcoded menu items
-      return [
-        { id: 1, name: 'Grilled Salmon', price: 28, description: 'Fresh Atlantic salmon with lemon herbs', category: 'Main Course', chef: 'Chef Mario', rating: 4.8, image: '🐟', allergens: ['fish'] },
-        { id: 2, name: 'Caesar Salad', price: 15, description: 'Crisp romaine lettuce with parmesan and croutons', category: 'Appetizer', chef: 'Chef Mario', rating: 4.6, image: '🥗', allergens: ['dairy', 'gluten'] },
-        { id: 3, name: 'Beef Wellington', price: 35, description: 'Tender beef wrapped in puff pastry with mushroom duxelles', category: 'Main Course', chef: 'Chef Isabella', rating: 4.9, image: '🥩', allergens: ['gluten', 'eggs'] },
-        { id: 4, name: 'Chocolate Soufflé', price: 12, description: 'Warm chocolate soufflé with vanilla ice cream', category: 'Dessert', chef: 'Chef Pierre', rating: 4.7, image: '🍰', allergens: ['dairy', 'eggs', 'gluten'] },
-        { id: 5, name: 'Lobster Bisque', price: 18, description: 'Rich and creamy lobster soup with a hint of brandy', category: 'Appetizer', chef: 'Chef Isabella', rating: 4.8, image: '🦞', allergens: ['shellfish', 'dairy'] },
-        { id: 6, name: 'Margherita Pizza', price: 22, description: 'Traditional pizza with fresh mozzarella, tomatoes, and basil', category: 'Main Course', chef: 'Chef Antonio', rating: 4.5, image: '🍕', allergens: ['gluten', 'dairy'] },
-      ];
-    }
-
     try {
-      return await this.request('/menu/items');
+      // Use the new meals endpoint for all available meals
+      const response = await this.request('/meals');
+      return response.meals || [];
     } catch (error) {
-      // Fallback to hardcoded menu items on error
+      console.log('Backend not available, using fallback menu');
+      return this.getFallbackMeals();
+    }
+  }
+
+  // Fallback menu for when backend is not available
+  getFallbackMeals(preferences = {}) {
+    const fallbackMeals = [
+      { id: 1, name: 'Grilled Salmon', price: 28, description: 'Fresh Atlantic salmon with lemon herbs', category: 'Main Course', chef: 'Chef Mario', rating: 4.8, image: '🐟', allergens: ['fish'], cuisine: 'Italian', diet: 'pescatarian', restaurant_name: "Chef Mario's Italian Kitchen" },
+      { id: 2, name: 'Caesar Salad', price: 15, description: 'Crisp romaine lettuce with parmesan and croutons', category: 'Appetizer', chef: 'Chef Mario', rating: 4.6, image: '🥗', allergens: ['dairy', 'gluten'], cuisine: 'Italian', diet: 'vegetarian', restaurant_name: "Chef Mario's Italian Kitchen" },
+      { id: 3, name: 'Beef Wellington', price: 35, description: 'Tender beef wrapped in puff pastry with mushroom duxelles', category: 'Main Course', chef: 'Chef Isabella', rating: 4.9, image: '🥩', allergens: ['gluten', 'eggs'], cuisine: 'French', diet: 'regular', restaurant_name: "Isabella's Fine Dining" },
+      { id: 4, name: 'Chocolate Soufflé', price: 12, description: 'Warm chocolate soufflé with vanilla ice cream', category: 'Dessert', chef: 'Chef Pierre', rating: 4.7, image: '🍰', allergens: ['dairy', 'eggs', 'gluten'], cuisine: 'French', diet: 'vegetarian', restaurant_name: "Isabella's Fine Dining" },
+      { id: 5, name: 'Quinoa Buddha Bowl', price: 18, description: 'Nutritious quinoa bowl with fresh vegetables and tahini dressing', category: 'Main Course', chef: 'Chef Sarah', rating: 4.4, image: '🥙', allergens: ['sesame'], cuisine: 'Vegetarian', diet: 'vegan', restaurant_name: "Garden Fresh Vegetarian" },
+      { id: 6, name: 'Margherita Pizza', price: 22, description: 'Traditional pizza with fresh mozzarella, tomatoes, and basil', category: 'Main Course', chef: 'Chef Antonio', rating: 4.5, image: '🍕', allergens: ['gluten', 'dairy'], cuisine: 'Italian', diet: 'vegetarian', restaurant_name: "Antonio's Pizza Place" },
+    ];
+
+    // Apply simple client-side filtering if backend is not available
+    const { cuisine, diet, maxPrice, category, allergens } = preferences;
+    
+    return fallbackMeals.filter(meal => {
+      if (cuisine && meal.cuisine.toLowerCase() !== cuisine.toLowerCase()) return false;
+      if (diet && meal.diet.toLowerCase() !== diet.toLowerCase()) return false;
+      if (maxPrice && meal.price > parseFloat(maxPrice)) return false;
+      if (category && category !== 'All' && meal.category !== category) return false;
+      if (allergens) {
+        const allergenList = Array.isArray(allergens) ? allergens : [allergens];
+        const hasAllergen = allergenList.some(allergen => 
+          meal.allergens.includes(allergen.toLowerCase())
+        );
+        if (hasAllergen) return false;
+      }
+      return true;
+    });
+  }
+
+  // Restaurant Aggregator - Get partner restaurants
+  async getPartnerRestaurants() {
+    try {
+      return await this.request('/restaurants');
+    } catch (error) {
+      console.log('Failed to get partner restaurants, using fallback');
       return [
-        { id: 1, name: 'Grilled Salmon', price: 28, description: 'Fresh Atlantic salmon with lemon herbs', category: 'Main Course', chef: 'Chef Mario', rating: 4.8, image: '🐟', allergens: ['fish'] },
-        { id: 2, name: 'Caesar Salad', price: 15, description: 'Crisp romaine lettuce with parmesan and croutons', category: 'Appetizer', chef: 'Chef Mario', rating: 4.6, image: '🥗', allergens: ['dairy', 'gluten'] },
-        { id: 3, name: 'Beef Wellington', price: 35, description: 'Tender beef wrapped in puff pastry with mushroom duxelles', category: 'Main Course', chef: 'Chef Isabella', rating: 4.9, image: '🥩', allergens: ['gluten', 'eggs'] },
-        { id: 4, name: 'Chocolate Soufflé', price: 12, description: 'Warm chocolate soufflé with vanilla ice cream', category: 'Dessert', chef: 'Chef Pierre', rating: 4.7, image: '🍰', allergens: ['dairy', 'eggs', 'gluten'] },
-        { id: 5, name: 'Lobster Bisque', price: 18, description: 'Rich and creamy lobster soup with a hint of brandy', category: 'Appetizer', chef: 'Chef Isabella', rating: 4.8, image: '🦞', allergens: ['shellfish', 'dairy'] },
-        { id: 6, name: 'Margherita Pizza', price: 22, description: 'Traditional pizza with fresh mozzarella, tomatoes, and basil', category: 'Main Course', chef: 'Chef Antonio', rating: 4.5, image: '🍕', allergens: ['gluten', 'dairy'] },
+        { id: 1, name: "Chef Mario's Italian Kitchen", cuisine: "Italian", location: "Downtown", partnership_type: "direct" },
+        { id: 2, name: "Isabella's Fine Dining", cuisine: "French", location: "Uptown", partnership_type: "direct" },
+        { id: 3, name: "Antonio's Pizza Place", cuisine: "Italian", location: "Midtown", partnership_type: "direct" },
+        { id: 4, name: "Garden Fresh Vegetarian", cuisine: "Vegetarian", location: "Downtown", partnership_type: "direct" },
+        { id: 5, name: "Sakura Japanese Cuisine", cuisine: "Japanese", location: "Westside", partnership_type: "direct" }
       ];
     }
   }
 
-  // New Yelp integration methods
+  async getPartnerRestaurantDetails(restaurantId) {
+    try {
+      return await this.request(`/restaurants/${restaurantId}`);
+    } catch (error) {
+      console.log('Failed to get restaurant details, using fallback');
+      return null;
+    }
+  }
+
+  // Legacy Yelp integration methods (for backward compatibility)
   async searchRestaurants(location, term = 'restaurants', limit = 20) {
     return await this.yelpService.searchBusinesses(location, term, limit);
   }
@@ -419,11 +484,11 @@ class ApiService {
     }
   }
 
-  // AI Waitress API
+  // AI Waitress API with enhanced restaurant discovery
   async sendAIMessage(message, context = {}) {
     if (!this.isBackendAvailable) {
-      // Fallback to local AI responses (existing logic)
-      return this.getLocalAIResponse(message, context);
+      // Enhanced fallback with restaurant discovery
+      return this.getEnhancedAIResponse(message, context);
     }
 
     try {
@@ -433,9 +498,100 @@ class ApiService {
       });
       return result.response;
     } catch (error) {
-      // Fallback to local AI responses on error
-      return this.getLocalAIResponse(message, context);
+      // Fallback to enhanced AI responses on error
+      return this.getEnhancedAIResponse(message, context);
     }
+  }
+
+  async getEnhancedAIResponse(userMessage, context = {}) {
+    const message = userMessage.toLowerCase();
+    
+    // Check if this is a restaurant discovery request
+    if (this.isRestaurantDiscoveryRequest(message)) {
+      return this.handleRestaurantDiscovery(userMessage, context);
+    }
+
+    // Fall back to local AI responses for other requests
+    return this.getLocalAIResponse(userMessage, context);
+  }
+
+  isRestaurantDiscoveryRequest(message) {
+    const restaurantKeywords = ['restaurant', 'place to eat', 'dining', 'eatery', 'cafe', 'bistro'];
+    const locationKeywords = ['nearby', 'near me', 'around', 'location', 'area'];
+    const cuisineKeywords = ['italian', 'chinese', 'mexican', 'thai', 'indian', 'french', 'japanese', 'korean', 'pizza', 'sushi', 'burger'];
+    const discoveryKeywords = ['find', 'search', 'looking for', 'recommend', 'suggest', 'discover'];
+
+    const hasRestaurantKeyword = restaurantKeywords.some(keyword => message.includes(keyword));
+    const hasLocationKeyword = locationKeywords.some(keyword => message.includes(keyword));
+    const hasCuisineKeyword = cuisineKeywords.some(keyword => message.includes(keyword));
+    const hasDiscoveryKeyword = discoveryKeywords.some(keyword => message.includes(keyword));
+
+    return ((hasRestaurantKeyword || hasCuisineKeyword) && (hasLocationKeyword || hasDiscoveryKeyword));
+  }
+
+  async handleRestaurantDiscovery(userMessage, context = {}) {
+    try {
+      // Extract location and cuisine from the message
+      const location = this.extractLocation(userMessage) || 'downtown';
+      const cuisine = this.extractCuisine(userMessage) || 'restaurants';
+
+      // Search for restaurants using Yelp service
+      const restaurants = await this.searchRestaurants(location, cuisine, 5);
+
+      if (restaurants && restaurants.length > 0) {
+        const restaurantList = restaurants.map((restaurant, index) => 
+          `${index + 1}. **${restaurant.name}** (${restaurant.rating}⭐) - ${restaurant.categories?.join(', ') || cuisine}\n   📍 ${restaurant.location?.address1 || 'Address not available'}\n   💰 ${restaurant.price || 'Price not available'}`
+        ).join('\n\n');
+
+        return `Great! I found some excellent ${cuisine} restaurants ${location}:\n\n${restaurantList}\n\nWould you like to see the menu for any of these restaurants? Just let me know which one interests you!`;
+      } else {
+        return `I'm sorry, I couldn't find specific restaurants in that area right now. However, I can show you our current menu with some amazing dishes! We have Italian options like Margherita Pizza, fresh Grilled Salmon, and more. Would you like to browse our available dishes?`;
+      }
+    } catch (error) {
+      console.error('Restaurant discovery failed:', error);
+      return `I'd love to help you find restaurants! While I search for options, would you like to browse our current menu? We have some fantastic dishes available right now.`;
+    }
+  }
+
+  extractLocation(message) {
+    // Simple location extraction - in a real app this would be more sophisticated
+    const locationPatterns = [
+      /nearby|near me|around/i,
+      /in ([a-zA-Z\s]+)/i,
+      /at ([a-zA-Z\s]+)/i,
+      /downtown|city center|uptown/i
+    ];
+
+    for (const pattern of locationPatterns) {
+      const match = message.match(pattern);
+      if (match) {
+        if (match[1]) return match[1].trim();
+        return 'nearby';
+      }
+    }
+    return null;
+  }
+
+  extractCuisine(message) {
+    const cuisines = {
+      'italian': ['italian', 'pizza', 'pasta', 'lasagna'],
+      'chinese': ['chinese', 'dim sum', 'wok'],
+      'mexican': ['mexican', 'tacos', 'burrito', 'quesadilla'],
+      'thai': ['thai', 'pad thai', 'curry'],
+      'indian': ['indian', 'curry', 'naan', 'biryani'],
+      'japanese': ['japanese', 'sushi', 'ramen', 'tempura'],
+      'french': ['french', 'bistro', 'croissant'],
+      'american': ['burger', 'barbecue', 'bbq', 'steak'],
+      'korean': ['korean', 'kimchi', 'bulgogi']
+    };
+
+    for (const [cuisine, keywords] of Object.entries(cuisines)) {
+      if (keywords.some(keyword => message.includes(keyword))) {
+        return cuisine;
+      }
+    }
+    
+    return 'restaurants';
   }
 
   getLocalAIResponse(userMessage, context = {}) {
@@ -468,6 +624,16 @@ class ApiService {
         "Our chefs are amazing! Each one specializes in different cuisines and brings unique flair to their dishes. Would you like to know about a specific chef?",
         "We work with verified chefs who are passionate about their craft! They're always happy to accommodate special requests when possible.",
         "Our chefs love connecting with food lovers! They often share cooking tips and the inspiration behind their dishes. Would you like to know more about any specific chef?"
+      ],
+      restaurants: [
+        "I'd love to help you discover amazing restaurants! I can search for places based on your location and preferences. What type of cuisine or location are you interested in?",
+        "Great! I can help you find fantastic restaurants nearby. What kind of food are you craving, and where are you located?",
+        "Perfect! Let me help you discover some wonderful dining options. Tell me your location and what type of restaurant you're looking for!"
+      ],
+      discovery: [
+        "I can help you explore restaurants and their menus! Once you find a restaurant you like, I can show you their full menu and help you decide what to order.",
+        "Let's start your culinary journey! I can search for restaurants, show you their menus, and guide you through ordering from your favorites.",
+        "I'm here to make restaurant discovery easy! From finding the perfect spot to browsing menus and placing orders, I've got you covered."
       ]
     };
 
@@ -476,6 +642,10 @@ class ApiService {
         return `Hello ${userProfile.name}! I'm Sofia, your AI waitress. Based on your profile, I can give you personalized recommendations. How can I help you today?`;
       }
       return aiResponses.greeting[Math.floor(Math.random() * aiResponses.greeting.length)];
+    } else if (message.includes('restaurant') || message.includes('place to eat') || message.includes('dining') || (message.includes('find') && (message.includes('italian') || message.includes('chinese') || message.includes('mexican') || message.includes('nearby') || message.includes('location')))) {
+      return aiResponses.restaurants[Math.floor(Math.random() * aiResponses.restaurants.length)];
+    } else if (message.includes('discover') || message.includes('explore') || message.includes('browse') || message.includes('search')) {
+      return aiResponses.discovery[Math.floor(Math.random() * aiResponses.discovery.length)];
     } else if (message.includes('menu') || message.includes('food') || message.includes('dish')) {
       return aiResponses.menu[Math.floor(Math.random() * aiResponses.menu.length)];
     } else if (message.includes('allerg') || message.includes('diet') || message.includes('vegetarian') || message.includes('vegan')) {
