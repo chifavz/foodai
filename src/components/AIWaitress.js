@@ -62,8 +62,13 @@ function AIWaitress() {
 
     // Base prompts that work anytime
     const basePrompts = [
+
+      "Find perfect meals for me",
+      "Give me personalized recommendations", 
+
       "Find Italian restaurants nearby",
       "Give me personalized recommendations",
+
       "Any vegetarian options?",
       "Discover restaurants in downtown",
       "Help me with allergies",
