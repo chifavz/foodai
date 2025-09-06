@@ -18,7 +18,6 @@ function CustomerInterface() {
 
   const [mealPreferences, setMealPreferences] = useState({});
   const [showPreferences, setShowPreferences] = useState(false);
-=======
   const [currentRestaurant, setCurrentRestaurant] = useState(null);
   const [fromDiscovery, setFromDiscovery] = useState(false);
 
@@ -51,13 +50,6 @@ function CustomerInterface() {
       setCurrentRestaurant(restaurantData || null);
       
       try {
-
-        const [meals, savedCart] = await Promise.all([
-          apiService.getMealsFiltered(), // Load all meals initially
-          apiService.getCart()
-        ]);
-        setMenuItems(meals);
-
         let items = [];
         
         // If we have restaurant-specific menu data, use it
@@ -84,7 +76,7 @@ function CustomerInterface() {
         
         const savedCart = await apiService.getCart();
         
-        setMenuItems(items); main
+        setMenuItems(items);
         setCart(savedCart);
         stopLoading();
       } catch (error) {
@@ -259,33 +251,24 @@ function CustomerInterface() {
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center">
 
-              <button
-                onClick={() => navigate('/')}
-
               <button 
                 onClick={() => fromDiscovery ? navigate('/discover') : navigate('/')}
-
                 className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 mr-4"
               >
                 ← Back
               </button>
               <div>
-
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">🤖 AI Meal Matching</h1>
-                <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">
-                  Discover perfect meals from our partner restaurants
-                </p>
-
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  🍴 {currentRestaurant ? `${currentRestaurant.name} Menu` : 'Browse Menu'}
+                  🍴 {currentRestaurant ? `${currentRestaurant.name} Menu` : '🤖 AI Meal Matching'}
                 </h1>
-                {currentRestaurant && (
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    📍 {currentRestaurant.location?.address1}, {currentRestaurant.location?.city} • 
-                    {currentRestaurant.rating}⭐ • {currentRestaurant.price || 'Price varies'}
-                  </p>
-                )}
-
+                <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">
+                  {currentRestaurant ? (
+                    <>📍 {currentRestaurant.location?.address1}, {currentRestaurant.location?.city} • 
+                    {currentRestaurant.rating}⭐ • {currentRestaurant.price || 'Price varies'}</>
+                  ) : (
+                    'Discover perfect meals from our partner restaurants'
+                  )}
+                </p>
               </div>
             </div>
             <div className="flex items-center space-x-4">
