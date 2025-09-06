@@ -1,9 +1,14 @@
 // API Service Layer for FoodAI Backend Integration
+import yelpService from './yelpService';
+import menuApiService from './menuApiService';
+
 class ApiService {
   constructor() {
     this.baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000/api';
     this.backendUrl = process.env.REACT_APP_BACKEND_URL || 'https://api.aifoodback.example.com';
     this.isBackendAvailable = false;
+    this.yelpService = yelpService;
+    this.menuApiService = menuApiService;
     this.checkBackendConnection();
   }
 
@@ -85,8 +90,20 @@ class ApiService {
     }
   }
 
-  // Menu Items API
-  async getMenuItems() {
+  // Menu Items API with enhanced integration
+  async getMenuItems(restaurantId = null, useExternalApi = false) {
+    // Try external menu APIs first if requested
+    if (useExternalApi && restaurantId) {
+      try {
+        const menu = await this.menuApiService.getRestaurantMenu(restaurantId);
+        if (menu && menu.categories) {
+          return this.menuApiService.getAllMenuItems(menu);
+        }
+      } catch (error) {
+        console.log('External menu API failed, falling back to backend/local menu');
+      }
+    }
+
     if (!this.isBackendAvailable) {
       // Fallback to hardcoded menu items
       return [
@@ -112,6 +129,25 @@ class ApiService {
         { id: 6, name: 'Margherita Pizza', price: 22, description: 'Traditional pizza with fresh mozzarella, tomatoes, and basil', category: 'Main Course', chef: 'Chef Antonio', rating: 4.5, image: '🍕' },
       ];
     }
+  }
+
+  // New Yelp integration methods
+  async searchRestaurants(location, term = 'restaurants', limit = 20) {
+    return await this.yelpService.searchBusinesses(location, term, limit);
+  }
+
+  async getRestaurantDetails(restaurantId) {
+    return await this.yelpService.getBusinessDetails(restaurantId);
+  }
+
+  // New menu API integration methods
+  async getRestaurantMenu(restaurantId, provider = 'chownow') {
+    return await this.menuApiService.getRestaurantMenu(restaurantId, provider);
+  }
+
+  async searchMenuItems(restaurantId, searchTerm, provider = 'chownow') {
+    const menu = await this.menuApiService.getRestaurantMenu(restaurantId, provider);
+    return this.menuApiService.searchMenuItems(menu, searchTerm);
   }
 
   // Cart API

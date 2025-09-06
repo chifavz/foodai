@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useLoading } from '../contexts/LoadingContext';
 import apiService from '../services/api';
+import OrderButton from './OrderButton';
 
 function OrderRedirect() {
   const navigate = useNavigate();
@@ -110,17 +111,24 @@ function OrderRedirect() {
       stopLoading();
       setOrderPlaced(true);
 
-      // In real app, this would redirect to external service URLs
+      // In real app, this would redirect to external service URLs with affiliate tracking
       setTimeout(() => {
+        // Use actual affiliate links instead of alerts
+        const restaurantId = 'demo-restaurant-123';
+        const restaurantName = 'FoodAI Demo Restaurant';
+        const affiliateId = process.env.REACT_APP_AFFILIATE_ID || 'YOUR_AFFILIATE_ID';
+        
         if (selectedDelivery === 'ubereats') {
-          // window.open('https://ubereats.com/checkout', '_blank');
-          alert('Redirecting to Uber Eats... (Demo mode)');
+          const affiliateUrl = `https://www.ubereats.com/ubereats?aff_id=${affiliateId}&restaurant_id=${restaurantId}&search=${encodeURIComponent(restaurantName)}`;
+          // window.open(affiliateUrl, '_blank');
+          alert(`Redirecting to Uber Eats...\nAffiliate URL: ${affiliateUrl}\n(Demo mode - link disabled)`);
         } else if (selectedDelivery === 'doordash') {
-        // window.open('https://doordash.com/checkout', '_blank');
-        alert('Redirecting to DoorDash... (Demo mode)');
-      }
-      navigate('/history');
-    }, 2000);
+          const affiliateUrl = `https://www.doordash.com/store/${restaurantId}?affiliate_id=${affiliateId}&q=${encodeURIComponent(restaurantName)}`;
+          // window.open(affiliateUrl, '_blank');
+          alert(`Redirecting to DoorDash...\nAffiliate URL: ${affiliateUrl}\n(Demo mode - link disabled)`);
+        }
+        navigate('/history');
+      }, 2000);
     } catch (error) {
       setLoadingError('Failed to place order. Please try again.');
     }
@@ -300,8 +308,25 @@ function OrderRedirect() {
             </button>
 
             {selectedDelivery && ['ubereats', 'doordash'].includes(selectedDelivery) && (
+              <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-600 mb-3 text-center">
+                  You'll be redirected to {deliveryOptions.find(option => option.id === selectedDelivery)?.name} to complete your order
+                </p>
+                <div className="space-y-2">
+                  <OrderButton
+                    platform={selectedDelivery}
+                    restaurantId="demo-restaurant-123"
+                    restaurantName="FoodAI Demo Restaurant"
+                    cart={cart}
+                    className="w-full text-sm"
+                  />
+                </div>
+              </div>
+            )}
+
+            {selectedDelivery && !['ubereats', 'doordash'].includes(selectedDelivery) && (
               <p className="text-sm text-gray-600 mt-3 text-center">
-                You'll be redirected to {deliveryOptions.find(option => option.id === selectedDelivery)?.name} to complete your order
+                {selectedDelivery === 'pickup' ? 'Your order will be ready for pickup' : 'Your table will be prepared'}
               </p>
             )}
           </div>
