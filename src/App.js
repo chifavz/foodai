@@ -11,6 +11,7 @@ import AIWaitress from './components/AIWaitress';
 import ProfileSetup from './components/ProfileSetup';
 import OrderRedirect from './components/OrderRedirect';
 import History from './components/History';
+import RestaurantDiscovery from './components/RestaurantDiscovery';
 
 // Import pages
 import Login from './pages/Login';
@@ -40,6 +41,9 @@ function App() {
               <Route path="/profile-setup" element={<ProfileSetup />} />
               <Route path="/checkout" element={<OrderRedirect />} />
               <Route path="/history" element={<History />} />
+
+              <Route path="/discover" element={<RestaurantDiscovery />} />
+
               <Route path="/home" element={<Home />} />
               <Route path="/order" element={<Order />} />
               <Route path="/profile" element={<Profile />} />
@@ -47,6 +51,7 @@ function App() {
               <Route path="/recommendations" element={<Recommendations />} />
               <Route path="/tracking" element={<Tracking />} />
               <Route path="/feedback" element={<Feedback />} />
+
             </Routes>
           </div>
         </Router>

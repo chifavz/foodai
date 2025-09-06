@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useLoading } from '../contexts/LoadingContext';
 import DarkModeToggle from './DarkModeToggle';
 import { MenuItemSkeleton } from './SkeletonLoader';
@@ -7,23 +7,57 @@ import apiService from '../services/api';
 
 function CustomerInterface() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { startLoading, stopLoading, setLoadingError } = useLoading();
   const [cart, setCart] = useState([]);
   const [menuItems, setMenuItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedItem, setSelectedItem] = useState(null);
   const [isLoadingMenu, setIsLoadingMenu] = useState(true);
+  const [currentRestaurant, setCurrentRestaurant] = useState(null);
+  const [fromDiscovery, setFromDiscovery] = useState(false);
 
   // Load menu items and cart on component mount
   useEffect(() => {
     const loadData = async () => {
       setIsLoadingMenu(true);
       startLoading();
+      
+      // Check if we're coming from restaurant discovery
+      const restaurantData = location.state?.restaurant;
+      const discoveryMenu = location.state?.menu;
+      const isFromDiscovery = location.state?.fromDiscovery;
+      
+      setFromDiscovery(isFromDiscovery || false);
+      setCurrentRestaurant(restaurantData || null);
+      
       try {
-        const [items, savedCart] = await Promise.all([
-          apiService.getMenuItems(),
-          apiService.getCart()
-        ]);
+        let items = [];
+        
+        // If we have restaurant-specific menu data, use it
+        if (discoveryMenu && discoveryMenu.categories) {
+          items = apiService.menuApiService.getAllMenuItems(discoveryMenu);
+        } else if (restaurantData && !location.state?.noMenuAvailable) {
+          // Try to load menu for the specific restaurant
+          try {
+            const restaurantMenu = await apiService.getRestaurantMenu(restaurantData.id);
+            if (restaurantMenu && restaurantMenu.categories) {
+              items = apiService.menuApiService.getAllMenuItems(restaurantMenu);
+            } else {
+              // Fall back to default menu if restaurant menu not available
+              items = await apiService.getMenuItems();
+            }
+          } catch (error) {
+            console.log('Failed to load restaurant menu, using default');
+            items = await apiService.getMenuItems();
+          }
+        } else {
+          // Default menu loading
+          items = await apiService.getMenuItems();
+        }
+        
+        const savedCart = await apiService.getCart();
+        
         setMenuItems(items);
         setCart(savedCart);
         stopLoading();
@@ -35,7 +69,7 @@ function CustomerInterface() {
     };
 
     loadData();
-  }, [startLoading, stopLoading, setLoadingError]);
+  }, [startLoading, stopLoading, setLoadingError, location.state]);
 
   // Save cart whenever it changes
   useEffect(() => {
@@ -176,15 +210,33 @@ function CustomerInterface() {
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center">
               <button 
-                onClick={() => navigate('/')}
+                onClick={() => fromDiscovery ? navigate('/discover') : navigate('/')}
                 className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 mr-4"
               >
                 ← Back
               </button>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">🍴 Browse Menu</h1>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  🍴 {currentRestaurant ? `${currentRestaurant.name} Menu` : 'Browse Menu'}
+                </h1>
+                {currentRestaurant && (
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    📍 {currentRestaurant.location?.address1}, {currentRestaurant.location?.city} • 
+                    {currentRestaurant.rating}⭐ • {currentRestaurant.price || 'Price varies'}
+                  </p>
+                )}
+              </div>
             </div>
             <div className="flex items-center space-x-4">
               <DarkModeToggle />
+              {fromDiscovery && (
+                <button 
+                  onClick={() => navigate('/discover')}
+                  className="bg-purple-600 dark:bg-purple-700 text-white px-4 py-2 rounded-lg hover:bg-purple-700 dark:hover:bg-purple-600 transition-colors"
+                >
+                  🔍 Discover More
+                </button>
+              )}
               <button 
                 onClick={() => navigate('/profile-setup')}
                 className="bg-green-600 dark:bg-green-700 text-white px-4 py-2 rounded-lg hover:bg-green-700 dark:hover:bg-green-600 transition-colors"
