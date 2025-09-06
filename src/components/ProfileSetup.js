@@ -13,7 +13,8 @@ function ProfileSetup() {
     cuisinePreferences: [],
     goals: [],
     budgetRange: '',
-    mealFrequency: ''
+    mealFrequency: '',
+    servicePreference: 'dine-in'  // New field for dining preference
   });
 
   const dietaryOptions = [
@@ -30,6 +31,12 @@ function ProfileSetup() {
 
   const goalOptions = [
     'Weight Loss', 'Muscle Gain', 'Healthy Eating', 'Energy Boost', 'Heart Health'
+  ];
+
+  const serviceOptions = [
+    { value: 'dine-in', label: 'Dine-In', icon: '🍽️', description: 'Enjoy meals at the restaurant' },
+    { value: 'delivery', label: 'Delivery', icon: '🚗', description: 'Have food delivered to you' },
+    { value: 'pickup', label: 'Pickup', icon: '🥡', description: 'Order ahead and pickup' }
   ];
 
   const handleArrayToggle = (field, value) => {
@@ -235,6 +242,31 @@ function ProfileSetup() {
                 <option value="monthly">Monthly</option>
                 <option value="special-occasions">Special occasions only</option>
               </select>
+            </div>
+
+            {/* Service Preference */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Preferred Dining Style
+              </label>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {serviceOptions.map(option => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => handleInputChange('servicePreference', option.value)}
+                    className={`p-4 rounded-lg border-2 transition-all ${
+                      profile.servicePreference === option.value
+                        ? 'border-blue-600 bg-blue-50 text-blue-900'
+                        : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="text-3xl mb-2">{option.icon}</div>
+                    <div className="font-semibold">{option.label}</div>
+                    <div className="text-sm mt-1 opacity-75">{option.description}</div>
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Submit Button */}
