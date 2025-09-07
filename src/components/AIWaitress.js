@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiService from '../services/api';
+import { fetchRestaurants, fetchMenu } from '../services/mockBackend';
 
 function AIWaitress() {
   const navigate = useNavigate();
@@ -62,13 +63,11 @@ function AIWaitress() {
 
     // Base prompts that work anytime
     const basePrompts = [
-
-      "Find perfect meals for me",
-      "Give me personalized recommendations", 
-
+      "Show me all restaurants",
+      "What restaurants are available?",
+      "Show me Sakura Sushi menu",
       "Find Italian restaurants nearby",
-      "Give me personalized recommendations",
-
+      "Show me Mario's menu",
       "Any vegetarian options?",
       "Discover restaurants in downtown",
       "Help me with allergies",
@@ -97,6 +96,84 @@ function AIWaitress() {
     setIsTyping(true);
 
     try {
+      // Check if user is asking about restaurants or menus
+      const message = messageToProcess.toLowerCase();
+      
+      // Enhanced AI logic with mock backend integration
+      if (message.includes('restaurant') || message.includes('places') || message.includes('where')) {
+        try {
+          // Use mock backend to fetch restaurants
+          const restaurants = await fetchRestaurants();
+          
+          let aiResponse = "I found these amazing restaurants for you:\n\n";
+          restaurants.forEach((restaurant, index) => {
+            aiResponse += `${index + 1}. **${restaurant.name}** (${restaurant.cuisine})\n   📍 ${restaurant.location}\n\n`;
+          });
+          aiResponse += "Would you like me to show you the menu for any of these restaurants? Just ask me about a specific restaurant!";
+          
+          const aiMessage = {
+            id: messages.length + 2,
+            type: 'ai',
+            content: aiResponse,
+            timestamp: new Date().toLocaleTimeString()
+          };
+          
+          setMessages(prev => [...prev, aiMessage]);
+          setIsTyping(false);
+          return;
+        } catch (error) {
+          console.error('Failed to fetch restaurants:', error);
+        }
+      }
+      
+      // Check if user is asking about menu
+      if (message.includes('menu') || message.includes('food') || message.includes('dish')) {
+        // Check if they mentioned a specific restaurant
+        if (message.includes('mario') || message.includes('italian kitchen')) {
+          try {
+            const menu = await fetchMenu(1);
+            let aiResponse = `Here's the menu for ${menu.restaurantName}:\n\n`;
+            menu.menu.forEach(item => {
+              aiResponse += `🍽️ **${item.name}** - $${item.price}\n   ${item.description}\n   Category: ${item.category}\n\n`;
+            });
+            
+            const aiMessage = {
+              id: messages.length + 2,
+              type: 'ai',
+              content: aiResponse,
+              timestamp: new Date().toLocaleTimeString()
+            };
+            
+            setMessages(prev => [...prev, aiMessage]);
+            setIsTyping(false);
+            return;
+          } catch (error) {
+            console.error('Failed to fetch menu:', error);
+          }
+        } else if (message.includes('sakura') || message.includes('sushi') || message.includes('japanese')) {
+          try {
+            const menu = await fetchMenu(5);
+            let aiResponse = `Here's the menu for ${menu.restaurantName}:\n\n`;
+            menu.menu.forEach(item => {
+              aiResponse += `🍽️ **${item.name}** - $${item.price}\n   ${item.description}\n   Category: ${item.category}\n\n`;
+            });
+            
+            const aiMessage = {
+              id: messages.length + 2,
+              type: 'ai',
+              content: aiResponse,
+              timestamp: new Date().toLocaleTimeString()
+            };
+            
+            setMessages(prev => [...prev, aiMessage]);
+            setIsTyping(false);
+            return;
+          } catch (error) {
+            console.error('Failed to fetch menu:', error);
+          }
+        }
+      }
+
       // Get user profile for context
       const userProfile = await apiService.getUserProfile();
       

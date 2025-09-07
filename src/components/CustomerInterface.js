@@ -43,6 +43,7 @@ function CustomerInterface() {
       
       // Check if we're coming from restaurant discovery
       const restaurantData = location.state?.restaurant;
+      const discoveryMenu = location.state?.menu;
       const isFromDiscovery = location.state?.fromDiscovery;
       
       setFromDiscovery(isFromDiscovery || false);
@@ -74,17 +75,10 @@ function CustomerInterface() {
           items = await apiService.getMenuItems();
         }
         
+        // Load cart data
         const savedCart = await apiService.getCart();
         
         setMenuItems(items);
-
-
-        const [meals, savedCart] = await Promise.all([
-          apiService.getMealsFiltered(), // Load all meals initially
-          apiService.getCart()
-        ]);
-        setMenuItems(meals);
-
         setCart(savedCart);
         stopLoading();
       } catch (error) {
@@ -257,7 +251,7 @@ function CustomerInterface() {
       <header className="bg-white dark:bg-gray-800 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
-            <div className="flex items-cen
+            <div className="flex items-center">
               <button 
                 onClick={() => fromDiscovery ? navigate('/discover') : navigate('/')}
                 className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 mr-4"
