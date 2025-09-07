@@ -135,18 +135,87 @@ function CustomerInterface() {
     return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
   };
 
-  // Simple text-based filtering (applied on top of preference filtering)
+  // Enhanced filtering logic with immediate frontend responses
   const filteredItems = menuItems.filter(item => {
     const searchMatch = !searchTerm || 
                        item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                        item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
                        item.chef.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                       item.restaurant_name?.toLowerCase().includes(searchTerm.toLowerCase());
+                       item.restaurant_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                       item.cuisine?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                       item.category?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // Special handling for "Similar to" searches
+    if (searchTerm.startsWith('Similar to ')) {
+      const itemName = searchTerm.replace('Similar to ', '');
+      const referenceItem = menuItems.find(menuItem => 
+        menuItem.name.toLowerCase().includes(itemName.toLowerCase())
+      );
+      
+      if (referenceItem) {
+        return item.id !== referenceItem.id && (
+          item.cuisine === referenceItem.cuisine ||
+          item.category === referenceItem.category ||
+          item.chef === referenceItem.chef ||
+          item.diet === referenceItem.diet
+        );
+      }
+    }
+    
     return searchMatch;
   });
 
   const closeModal = () => {
     setSelectedItem(null);
+  };
+
+  // Quick Action Handlers - Frontend immediate responses
+  const handleShowSimilar = (item) => {
+    // Immediate frontend filtering for similar items
+    const similarItems = menuItems.filter(menuItem => 
+      menuItem.id !== item.id && (
+        menuItem.cuisine === item.cuisine ||
+        menuItem.category === item.category ||
+        menuItem.chef === item.chef ||
+        menuItem.diet === item.diet
+      )
+    );
+    
+    // Update search term to show the filtering is active
+    setSearchTerm(`Similar to ${item.name}`);
+    
+    // Show immediate feedback
+    const showCount = similarItems.length;
+    if (showCount === 0) {
+      alert(`No similar items found to ${item.name}. Try browsing our ${item.cuisine} cuisine or ${item.category} category!`);
+      setSearchTerm('');
+    } else {
+      // Temporarily filter items to show only similar ones
+      setTimeout(() => {
+        setSearchTerm(''); // Clear after showing results
+      }, 5000); // Auto-clear after 5 seconds
+    }
+  };
+
+  const handleFilterByCuisine = (cuisine) => {
+    // Immediate frontend cuisine filtering
+    setMealPreferences(prev => ({ ...prev, cuisine }));
+    loadMealsWithPreferences({ ...mealPreferences, cuisine });
+    
+    // Show immediate feedback with search term
+    setSearchTerm(`${cuisine} cuisine`);
+    
+    // Auto-clear search after showing results
+    setTimeout(() => {
+      setSearchTerm('');
+    }, 3000);
+  };
+
+  const handleClearFilters = () => {
+    // Clear all filters and reload default meals
+    setMealPreferences({});
+    setSearchTerm('');
+    loadMealsWithPreferences({});
   };
 
   const ItemDetailsModal = ({ item, onClose }) => {
@@ -363,6 +432,32 @@ function CustomerInterface() {
                   </button>
                 )}
               </div>
+
+              {/* Quick Cuisine Filter Buttons */}
+              <div className="mt-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Quick Filters:</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {['All', 'Italian', 'French', 'Japanese', 'Vegetarian'].map(cuisine => (
+                    <button
+                      key={cuisine}
+                      onClick={() => cuisine === 'All' ? handleClearFilters() : handleFilterByCuisine(cuisine)}
+                      className={`px-3 py-1 rounded-full text-sm transition-colors ${
+                        (cuisine === 'All' && !mealPreferences.cuisine) || mealPreferences.cuisine === cuisine
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      {cuisine === 'All' ? '🍽️ All' : 
+                       cuisine === 'Italian' ? '🍝 Italian' :
+                       cuisine === 'French' ? '🥖 French' :
+                       cuisine === 'Japanese' ? '🍣 Japanese' :
+                       '🥗 Vegetarian'}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
 
             {/* Results Count */}
@@ -438,6 +533,22 @@ function CustomerInterface() {
                           className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm font-medium"
                         >
                           View Details
+                        </button>
+                      </div>
+                      
+                      {/* Quick Action Buttons */}
+                      <div className="flex gap-2 mb-3">
+                        <button
+                          onClick={() => handleShowSimilar(item)}
+                          className="flex-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 py-2 px-3 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-sm"
+                        >
+                          🔍 Show Similar
+                        </button>
+                        <button
+                          onClick={() => handleFilterByCuisine(item.cuisine)}
+                          className="flex-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 py-2 px-3 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-sm"
+                        >
+                          🍽️ {item.cuisine}
                         </button>
                       </div>
                       
