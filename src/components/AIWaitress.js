@@ -61,21 +61,19 @@ function AIWaitress() {
       ];
     }
 
-    // Base prompts that work anytime
+    // Enhanced base prompts with quick actions
     const basePrompts = [
       "Show me all restaurants",
-      "What restaurants are available?",
-      "Show me Sakura Sushi menu",
-      "Find Italian restaurants nearby",
-      "Show me Mario's menu",
-      "Any vegetarian options?",
-      "Discover restaurants in downtown",
-      "Help me with allergies",
-      "What's trending today?"
+      "Filter by cuisine",
+      "Show similar dishes",
+      "Quick Italian food",
+      "Vegetarian options",
+      "Help me find similar items",
+      "Fast filtering options"
     ];
 
     // Mix time-based and base prompts
-    return [...timeBasedPrompts.slice(0, 2), ...basePrompts.slice(0, 3)];
+    return [...timeBasedPrompts.slice(0, 2), ...basePrompts.slice(0, 5)];
   };
 
   const quickQuestions = getSmartPrompts();
@@ -100,6 +98,7 @@ function AIWaitress() {
     setIsTyping(true);
 
     try {
+
       const userMessage = messageToProcess.toLowerCase();
 
       // Show partner restaurants
@@ -109,6 +108,113 @@ function AIWaitress() {
           addMessage('ai', 'Sorry, no restaurants found.');
         } else {
           addMessage('ai', restaurants, 'restaurants');
+
+      // Check if user is asking about restaurants or menus
+      const message = messageToProcess.toLowerCase();
+      
+      // IMMEDIATE FRONTEND RESPONSES - Handle common queries instantly
+      if (message.includes('filter') && message.includes('cuisine')) {
+        const aiMessage = {
+          id: messages.length + 2,
+          type: 'ai',
+          content: "I can help you filter by cuisine right away! Here are our available cuisines:",
+          timestamp: new Date().toLocaleTimeString(),
+          actions: [
+            {
+              label: "🍝 Italian",
+              action: () => navigate('/customer?cuisine=Italian')
+            },
+            {
+              label: "🥖 French", 
+              action: () => navigate('/customer?cuisine=French')
+            },
+            {
+              label: "🍣 Japanese",
+              action: () => navigate('/customer?cuisine=Japanese')
+            },
+            {
+              label: "🥗 Vegetarian",
+              action: () => navigate('/customer?cuisine=Vegetarian')
+            }
+          ]
+        };
+        
+        setMessages(prev => [...prev, aiMessage]);
+        setIsTyping(false);
+        return;
+      }
+
+      if (message.includes('show similar') || message.includes('similar dishes')) {
+        const aiMessage = {
+          id: messages.length + 2,
+          type: 'ai',
+          content: "Great! When you're browsing our menu, look for the '🔍 Show Similar' button on each dish. It will instantly show you similar items based on cuisine, category, chef, or dietary preferences!",
+          timestamp: new Date().toLocaleTimeString(),
+          actions: [
+            {
+              label: "📋 Browse Menu",
+              action: () => navigate('/customer')
+            }
+          ]
+        };
+        
+        setMessages(prev => [...prev, aiMessage]);
+        setIsTyping(false);
+        return;
+      }
+
+      if (message.includes('quick') || message.includes('fast') || message.includes('immediate')) {
+        const aiMessage = {
+          id: messages.length + 2,
+          type: 'ai',
+          content: "I'm designed for quick responses! Here are some instant actions you can take:",
+          timestamp: new Date().toLocaleTimeString(),
+          actions: [
+            {
+              label: "🍽️ Quick Cuisine Filters",
+              action: () => navigate('/customer')
+            },
+            {
+              label: "🔍 Show Similar Items",
+              action: () => navigate('/customer')
+            },
+            {
+              label: "🎯 AI Preferences",
+              action: () => navigate('/customer')
+            }
+          ]
+        };
+        
+        setMessages(prev => [...prev, aiMessage]);
+        setIsTyping(false);
+        return;
+      }
+      
+      // Enhanced AI logic with mock backend integration
+      if (message.includes('restaurant') || message.includes('places') || message.includes('where')) {
+        try {
+          // Use mock backend to fetch restaurants
+          const restaurants = await fetchRestaurants();
+          
+          let aiResponse = "I found these amazing restaurants for you:\n\n";
+          restaurants.forEach((restaurant, index) => {
+            aiResponse += `${index + 1}. **${restaurant.name}** (${restaurant.cuisine})\n   📍 ${restaurant.location}\n\n`;
+          });
+          aiResponse += "Would you like me to show you the menu for any of these restaurants? Just ask me about a specific restaurant!";
+          
+          const aiMessage = {
+            id: messages.length + 2,
+            type: 'ai',
+            content: aiResponse,
+            timestamp: new Date().toLocaleTimeString()
+          };
+          
+          setMessages(prev => [...prev, aiMessage]);
+          setIsTyping(false);
+          return;
+        } catch (error) {
+          console.error('Failed to fetch restaurants:', error);
+
         }
         setIsTyping(false);
         return;
