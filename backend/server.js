@@ -4,7 +4,7 @@
 const express = require('express');
 const cors = require('cors');
 const app = express();
-const PORT = process.env.PORT || 8000;
+const PORT = process.env.PORT || 5001;
 
 // Middleware
 app.use(cors());
@@ -293,6 +293,33 @@ app.get('/api/restaurants/:id', (req, res) => {
   res.json({
     ...restaurant,
     meals: restaurantMeals
+  });
+});
+
+// Mock endpoints as specified in the problem statement
+// Get all restaurants (without /api prefix for frontend mock functions)
+app.get('/restaurants', (req, res) => {
+  res.json(restaurants);
+});
+
+// Get restaurant menu (without /api prefix for frontend mock functions)
+app.get('/restaurants/:id/menu', (req, res) => {
+  const { id } = req.params;
+  const restaurant = restaurants.find(r => r.id === parseInt(id));
+  
+  if (!restaurant) {
+    return res.status(404).json({ error: 'Restaurant not found' });
+  }
+  
+  // Get meals for this restaurant as menu items
+  const menuItems = meals.filter(meal => meal.restaurant_id === parseInt(id));
+  
+  res.json({
+    restaurantId: parseInt(id),
+    restaurantName: restaurant.name,
+    cuisine: restaurant.cuisine,
+    location: restaurant.location,
+    menu: menuItems
   });
 });
 
