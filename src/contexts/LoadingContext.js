@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useCallback } from 'react';
 
 const LoadingContext = createContext();
 
@@ -14,23 +14,23 @@ export const LoadingProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const startLoading = () => {
+  const startLoading = useCallback(() => {
     setIsLoading(true);
     setError(null);
-  };
+  }, []);
 
-  const stopLoading = () => {
+  const stopLoading = useCallback(() => {
     setIsLoading(false);
-  };
+  }, []);
 
-  const setLoadingError = (error) => {
+  const setLoadingError = useCallback((error) => {
     setError(error);
     setIsLoading(false);
-  };
+  }, []);
 
-  const clearError = () => {
+  const clearError = useCallback(() => {
     setError(null);
-  };
+  }, []);
 
   return (
     <LoadingContext.Provider value={{
