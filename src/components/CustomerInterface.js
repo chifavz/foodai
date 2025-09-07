@@ -50,11 +50,41 @@ function CustomerInterface() {
       
       try {
 
+        let items = [];
+        
+        // If we have restaurant-specific menu data, use it
+        if (discoveryMenu && discoveryMenu.categories) {
+          items = apiService.menuApiService.getAllMenuItems(discoveryMenu);
+        } else if (restaurantData && !location.state?.noMenuAvailable) {
+          // Try to load menu for the specific restaurant
+          try {
+            const restaurantMenu = await apiService.getRestaurantMenu(restaurantData.id);
+            if (restaurantMenu && restaurantMenu.categories) {
+              items = apiService.menuApiService.getAllMenuItems(restaurantMenu);
+            } else {
+              // Fall back to default menu if restaurant menu not available
+              items = await apiService.getMenuItems();
+            }
+          } catch (error) {
+            console.log('Failed to load restaurant menu, using default');
+            items = await apiService.getMenuItems();
+          }
+        } else {
+          // Default menu loading
+          items = await apiService.getMenuItems();
+        }
+        
+        const savedCart = await apiService.getCart();
+        
+        setMenuItems(items);
+
+
         const [meals, savedCart] = await Promise.all([
           apiService.getMealsFiltered(), // Load all meals initially
           apiService.getCart()
         ]);
         setMenuItems(meals);
+
         setCart(savedCart);
         stopLoading();
       } catch (error) {
@@ -227,7 +257,7 @@ function CustomerInterface() {
       <header className="bg-white dark:bg-gray-800 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
-            <div className="flex items-center">
+            <div className="flex items-cen
               <button 
                 onClick={() => fromDiscovery ? navigate('/discover') : navigate('/')}
                 className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 mr-4"
@@ -236,14 +266,25 @@ function CustomerInterface() {
               </button>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                  🍴 {currentRestaurant ? `${currentRestaurant.name} Menu` : 'Browse Menu'}
+                  🍴 {currentRestaurant ? `${currentRestaurant.name} Menu` : '🤖 AI Meal Matching'}
                 </h1>
+
+                <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">
+                  {currentRestaurant ? (
+                    <>📍 {currentRestaurant.location?.address1}, {currentRestaurant.location?.city} • 
+                    {currentRestaurant.rating}⭐ • {currentRestaurant.price || 'Price varies'}</>
+                  ) : (
+                    'Discover perfect meals from our partner restaurants'
+                  )}
+                </p>
+
                 {currentRestaurant && (
                   <p className="text-sm text-gray-600 dark:text-gray-400">
                     📍 {currentRestaurant.location?.address1}, {currentRestaurant.location?.city} • 
                     {currentRestaurant.rating}⭐ • {currentRestaurant.price || 'Price varies'}
                   </p>
                 )}
+
               </div>
             </div>
             <div className="flex items-center space-x-4">
