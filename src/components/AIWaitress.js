@@ -2,6 +2,16 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MealService from '../services/MealService';
 import RestaurantService from '../services/RestaurantService';
+import apiService from '../services/api';
+
+// Mock function for restaurants (since fetchRestaurants is not defined)
+const fetchRestaurants = () => {
+  return Promise.resolve([
+    { name: "Bistro Milano", cuisine: "Italian", location: "Downtown" },
+    { name: "Sakura Sushi", cuisine: "Japanese", location: "Midtown" },
+    { name: "Le Petit Café", cuisine: "French", location: "Arts District" }
+  ]);
+};
 
 function AIWaitress() {
   const navigate = useNavigate();
@@ -180,12 +190,14 @@ function AIWaitress() {
           addMessage('ai', 'Sorry, no restaurants found.');
         } else {
           addMessage('ai', restaurants, 'restaurants');
+        }
+        setIsTyping(false);
+        return;
+      }
 
-      // Check if user is asking about restaurants or menus
-      const message = messageToProcess.toLowerCase();
       
       // IMMEDIATE FRONTEND RESPONSES - Handle common queries instantly
-      if (message.includes('filter') && message.includes('cuisine')) {
+      if (userMessage.includes('filter') && userMessage.includes('cuisine')) {
         const aiMessage = {
           id: messages.length + 2,
           type: 'ai',
@@ -216,7 +228,7 @@ function AIWaitress() {
         return;
       }
 
-      if (message.includes('show similar') || message.includes('similar dishes')) {
+      if (userMessage.includes('show similar') || userMessage.includes('similar dishes')) {
         const aiMessage = {
           id: messages.length + 2,
           type: 'ai',
@@ -235,7 +247,7 @@ function AIWaitress() {
         return;
       }
 
-      if (message.includes('quick') || message.includes('fast') || message.includes('immediate')) {
+      if (userMessage.includes('quick') || userMessage.includes('fast') || userMessage.includes('immediate')) {
         const aiMessage = {
           id: messages.length + 2,
           type: 'ai',
@@ -263,7 +275,7 @@ function AIWaitress() {
       }
       
       // Enhanced AI logic with mock backend integration
-      if (message.includes('restaurant') || message.includes('places') || message.includes('where')) {
+      if (userMessage.includes('restaurant') || userMessage.includes('places') || userMessage.includes('where')) {
         try {
           // Use mock backend to fetch restaurants
           const restaurants = await fetchRestaurants();
@@ -286,7 +298,7 @@ function AIWaitress() {
           return;
         } catch (error) {
           console.error('Failed to fetch restaurants:', error);
-
+          addMessage('ai', "I'm having trouble finding restaurants right now. Please try again later!");
         }
         setIsTyping(false);
         return;
