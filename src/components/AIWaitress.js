@@ -16,6 +16,13 @@ function AIWaitress() {
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef(null);
+  
+  // Mini discovery UI state
+  const [showDiscoveryUI, setShowDiscoveryUI] = useState(true);
+  const [discoveryMeals, setDiscoveryMeals] = useState([]);
+  const [selectedCuisine, setSelectedCuisine] = useState('All');
+  const [isLoadingMeals, setIsLoadingMeals] = useState(false);
+  const [cart, setCart] = useState([]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -24,6 +31,71 @@ function AIWaitress() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Load initial meals for discovery UI
+  useEffect(() => {
+    loadDiscoveryMeals();
+    loadCart();
+  }, []);
+
+  const loadDiscoveryMeals = async (cuisine = 'All') => {
+    setIsLoadingMeals(true);
+    try {
+      const params = cuisine !== 'All' ? { cuisine } : {};
+      const result = await apiService.getMeals(params);
+      setDiscoveryMeals(result.meals.slice(0, 6)); // Show only first 6 meals
+    } catch (error) {
+      console.error('Failed to load discovery meals:', error);
+      setDiscoveryMeals([]);
+    } finally {
+      setIsLoadingMeals(false);
+    }
+  };
+
+  const loadCart = async () => {
+    try {
+      const currentCart = await apiService.getCart();
+      setCart(currentCart);
+    } catch (error) {
+      console.error('Failed to load cart:', error);
+    }
+  };
+
+  const handleCuisineFilter = (cuisine) => {
+    setSelectedCuisine(cuisine);
+    loadDiscoveryMeals(cuisine);
+  };
+
+  const addToCartFromDiscovery = async (meal) => {
+    try {
+      const existingItem = cart.find(item => item.id === meal.id);
+      let updatedCart;
+      
+      if (existingItem) {
+        updatedCart = cart.map(item =>
+          item.id === meal.id
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        );
+      } else {
+        updatedCart = [...cart, { ...meal, quantity: 1 }];
+      }
+      
+      setCart(updatedCart);
+      await apiService.saveCart(updatedCart);
+      
+      // Add a confirmation message to chat
+      const confirmationMessage = {
+        id: messages.length + 1,
+        type: 'ai',
+        content: `✅ Added "${meal.name}" to your cart! You now have ${existingItem ? existingItem.quantity + 1 : 1} of this item.`,
+        timestamp: new Date().toLocaleTimeString()
+      };
+      setMessages(prev => [...prev, confirmationMessage]);
+    } catch (error) {
+      console.error('Failed to add to cart:', error);
+    }
+  };
 
   // Get contextual smart prompts based on time of day and user behavior
   const getSmartPrompts = () => {
@@ -337,7 +409,7 @@ function AIWaitress() {
                 onClick={() => navigate('/customer')}
                 className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
               >
-                🛒 Menu
+                🛒 Menu {cart.length > 0 && <span className="ml-1 bg-white text-blue-600 rounded-full px-2 py-1 text-xs">{cart.reduce((sum, item) => sum + item.quantity, 0)}</span>}
               </button>
               <button
                 onClick={() => navigate('/profile-setup')}
@@ -366,6 +438,107 @@ function AIWaitress() {
               </div>
             </div>
           </div>
+
+          {/* Mini Food Discovery UI */}
+          {showDiscoveryUI && (
+            <div className="px-6 py-4 bg-gradient-to-r from-purple-50 to-pink-50 border-b">
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="text-lg font-semibold text-gray-900">🍽️ Quick Discovery</h3>
+                <button
+                  onClick={() => setShowDiscoveryUI(false)}
+                  className="text-gray-400 hover:text-gray-600 text-sm"
+                >
+                  ✕ Hide
+                </button>
+              </div>
+              
+              {/* Quick Filter Buttons */}
+              <div className="flex flex-wrap gap-2 mb-4">
+                {['All', 'Italian', 'French', 'Japanese', 'Vegetarian'].map(cuisine => (
+                  <button
+                    key={cuisine}
+                    onClick={() => handleCuisineFilter(cuisine)}
+                    className={`px-3 py-1 rounded-full text-sm transition-colors ${
+                      selectedCuisine === cuisine
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    {cuisine === 'All' ? '🍽️ All' : 
+                     cuisine === 'Italian' ? '🍝 Italian' :
+                     cuisine === 'French' ? '🥖 French' :
+                     cuisine === 'Japanese' ? '🍣 Japanese' :
+                     '🥗 Vegetarian'}
+                  </button>
+                ))}
+              </div>
+
+              {/* Meals Grid */}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {isLoadingMeals ? (
+                  Array.from({ length: 6 }).map((_, index) => (
+                    <div key={index} className="bg-white rounded-lg p-3 shadow-sm animate-pulse">
+                      <div className="w-8 h-8 bg-gray-200 rounded mx-auto mb-2"></div>
+                      <div className="h-3 bg-gray-200 rounded mb-1"></div>
+                      <div className="h-2 bg-gray-200 rounded w-2/3"></div>
+                    </div>
+                  ))
+                ) : (
+                  discoveryMeals.map(meal => (
+                    <div key={meal.id} className="bg-white rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow">
+                      <div className="text-center mb-2">
+                        <div className="text-2xl mb-1">{meal.image}</div>
+                        <h4 className="font-semibold text-sm text-gray-900 leading-tight">{meal.name}</h4>
+                        <p className="text-xs text-gray-600">{meal.restaurant_name}</p>
+                      </div>
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-lg font-bold text-purple-600">${meal.price}</span>
+                        <div className="flex items-center text-yellow-500 text-xs">
+                          <span>⭐</span>
+                          <span className="ml-1">{meal.rating}</span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => addToCartFromDiscovery(meal)}
+                        className="w-full bg-purple-600 text-white text-xs py-2 rounded-md hover:bg-purple-700 transition-colors"
+                      >
+                        🛒 Add to Cart
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+              
+              {!isLoadingMeals && discoveryMeals.length === 0 && (
+                <div className="text-center text-gray-500 py-4">
+                  <p className="text-sm">No meals found for this cuisine. Try a different filter!</p>
+                </div>
+              )}
+              
+              {/* View More Button */}
+              {discoveryMeals.length > 0 && (
+                <div className="text-center mt-4">
+                  <button
+                    onClick={() => navigate('/customer')}
+                    className="text-purple-600 hover:text-purple-700 text-sm font-medium"
+                  >
+                    View Full Menu →
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {!showDiscoveryUI && (
+            <div className="px-6 py-2 bg-gray-50 border-b">
+              <button
+                onClick={() => setShowDiscoveryUI(true)}
+                className="text-purple-600 hover:text-purple-700 text-sm font-medium"
+              >
+                🍽️ Show Quick Discovery
+              </button>
+            </div>
+          )}
 
           {/* Messages */}
           <div className="h-96 overflow-y-auto p-6 space-y-4">

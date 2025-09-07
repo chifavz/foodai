@@ -225,12 +225,13 @@ class ApiService {
       
       // Filter items based on preferences
       let filteredItems = allItems.filter(item => {
-        // Filter by cuisine (check if item name, description, or chef specialty matches)
+        // Filter by cuisine (check if item name, description, chef specialty, or cuisine field matches)
         if (cuisine) {
           const cuisineMatch = 
             item.name.toLowerCase().includes(cuisine.toLowerCase()) ||
             item.description.toLowerCase().includes(cuisine.toLowerCase()) ||
-            item.chef.toLowerCase().includes(cuisine.toLowerCase());
+            item.chef.toLowerCase().includes(cuisine.toLowerCase()) ||
+            (item.cuisine && item.cuisine.toLowerCase() === cuisine.toLowerCase());
           if (!cuisineMatch) return false;
         }
         
