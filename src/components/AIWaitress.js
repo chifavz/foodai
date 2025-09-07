@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import apiService from '../services/api';
-import { fetchRestaurants, fetchMenu } from '../services/mockBackend';
+import MealService from '../services/MealService';
+import RestaurantService from '../services/RestaurantService';
 
 function AIWaitress() {
   const navigate = useNavigate();
@@ -78,6 +78,10 @@ function AIWaitress() {
 
   const quickQuestions = getSmartPrompts();
 
+  const addMessage = (from, content, type = 'text') => {
+    setMessages(prev => [...prev, { from, content, type, id: prev.length + 1, timestamp: new Date().toLocaleTimeString() }]);
+  };
+
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
 
@@ -94,6 +98,17 @@ function AIWaitress() {
     setIsTyping(true);
 
     try {
+
+      const userMessage = messageToProcess.toLowerCase();
+
+      // Show partner restaurants
+      if (userMessage.includes('show me all restaurants') || userMessage.includes('restaurants')) {
+        const restaurants = await RestaurantService.getPartnerRestaurants();
+        if (restaurants.length === 0) {
+          addMessage('ai', 'Sorry, no restaurants found.');
+        } else {
+          addMessage('ai', restaurants, 'restaurants');
+
       // Check if user is asking about restaurants or menus
       const message = messageToProcess.toLowerCase();
       
@@ -199,98 +214,27 @@ function AIWaitress() {
           return;
         } catch (error) {
           console.error('Failed to fetch restaurants:', error);
+
         }
-      }
-      
-      // Check if user is asking about menu
-      if (message.includes('menu') || message.includes('food') || message.includes('dish')) {
-        // Check if they mentioned a specific restaurant
-        if (message.includes('mario') || message.includes('italian kitchen')) {
-          try {
-            const menu = await fetchMenu(1);
-            let aiResponse = `Here's the menu for ${menu.restaurantName}:\n\n`;
-            menu.menu.forEach(item => {
-              aiResponse += `🍽️ **${item.name}** - $${item.price}\n   ${item.description}\n   Category: ${item.category}\n\n`;
-            });
-            
-            const aiMessage = {
-              id: messages.length + 2,
-              type: 'ai',
-              content: aiResponse,
-              timestamp: new Date().toLocaleTimeString()
-            };
-            
-            setMessages(prev => [...prev, aiMessage]);
-            setIsTyping(false);
-            return;
-          } catch (error) {
-            console.error('Failed to fetch menu:', error);
-          }
-        } else if (message.includes('sakura') || message.includes('sushi') || message.includes('japanese')) {
-          try {
-            const menu = await fetchMenu(5);
-            let aiResponse = `Here's the menu for ${menu.restaurantName}:\n\n`;
-            menu.menu.forEach(item => {
-              aiResponse += `🍽️ **${item.name}** - $${item.price}\n   ${item.description}\n   Category: ${item.category}\n\n`;
-            });
-            
-            const aiMessage = {
-              id: messages.length + 2,
-              type: 'ai',
-              content: aiResponse,
-              timestamp: new Date().toLocaleTimeString()
-            };
-            
-            setMessages(prev => [...prev, aiMessage]);
-            setIsTyping(false);
-            return;
-          } catch (error) {
-            console.error('Failed to fetch menu:', error);
-          }
-        }
+        setIsTyping(false);
+        return;
       }
 
-      // Get user profile for context
-      const userProfile = await apiService.getUserProfile();
-      
-      // Send message to AI service with context
-      const aiResponse = await apiService.sendAIMessage(messageToProcess, {
-        userProfile,
-        conversationHistory: messages.slice(-5) // Last 5 messages for context
-      });
-      
-      const aiMessage = {
-        id: messages.length + 2,
-        type: 'ai',
-        content: aiResponse,
-        timestamp: new Date().toLocaleTimeString()
-      };
-      
-      setMessages(prev => [...prev, aiMessage]);
+      // Show meals
+      if (userMessage.includes('show me meals') || userMessage.includes('menu') || userMessage.includes('food')) {
+        const meals = await MealService.getMealsFiltered();
+        if (meals.length === 0) {
+          addMessage('ai', 'I couldn\'t find any meals matching your criteria.');
+        } else {
+          addMessage('ai', meals, 'meals');
+        }
+        setIsTyping(false);
+        return;
+      }
+
+      // Default response
+      addMessage('ai', "I can help you with menu info, recommendations, dietary requirements, and placing orders. What would you like to know more about?");
       setIsTyping(false);
-
-      // Check if this response includes restaurant recommendations and offer discovery option
-      if (aiResponse.includes('restaurants') && (aiResponse.includes('found') || aiResponse.includes('search'))) {
-        setTimeout(() => {
-          const discoveryMessage = {
-            id: messages.length + 3,
-            type: 'ai',
-            content: "Would you like to explore these restaurants in more detail? I can show you a full list with photos, reviews, and menus!",
-            timestamp: new Date().toLocaleTimeString(),
-            actions: [
-              {
-                label: "🔍 Discover Restaurants",
-                action: () => navigate('/discover')
-              },
-              {
-                label: "📋 Browse Current Menu",
-                action: () => navigate('/customer')
-              }
-            ]
-          };
-          setMessages(prev => [...prev, discoveryMessage]);
-        }, 1000);
-      }
       
     } catch (error) {
       console.error('Failed to get AI response:', error);
@@ -382,7 +326,45 @@ function AIWaitress() {
                       <span className="font-semibold text-sm">Sofia</span>
                     </div>
                   )}
-                  <p className="text-sm whitespace-pre-line">{message.content}</p>
+                  
+                  {message.type && message.type !== 'text' ? (
+                    <>
+                      {message.type === 'restaurants' && (
+                        <div className="cards">
+                          {message.content.map(r => (
+                            <div key={r.id} className="card border border-gray-200 p-3 mb-2 rounded-lg bg-white">
+                              <h4 className="font-semibold text-gray-900">{r.name}</h4>
+                              <p className="text-sm text-gray-600">{r.cuisine} - {r.location}</p>
+                              {r.affiliateLink && (
+                                <a href={r.affiliateLink} target="_blank" rel="noopener noreferrer" className="inline-block mt-2 px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors">
+                                  Order / Visit
+                                </a>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {message.type === 'meals' && (
+                        <div className="cards">
+                          {message.content.map(m => (
+                            <div key={m.id} className="card border border-gray-200 p-3 mb-2 rounded-lg bg-white">
+                              <h4 className="font-semibold text-gray-900">{m.name} - ${m.price}</h4>
+                              <p className="text-sm text-gray-600">{m.description}</p>
+                              <p className="text-xs text-gray-500 mt-1">Restaurant: {m.restaurant_name}</p>
+                              {m.affiliateLink && (
+                                <a href={m.affiliateLink} target="_blank" rel="noopener noreferrer" className="inline-block mt-2 px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition-colors">
+                                  Order Now
+                                </a>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <p className="text-sm whitespace-pre-line">{message.content}</p>
+                  )}
                   {message.actions && (
                     <div className="mt-3 space-y-2">
                       {message.actions.map((action, index) => (
