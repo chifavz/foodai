@@ -89,7 +89,7 @@ function CustomerInterface() {
     };
 
     loadData();
-  }, [startLoading, stopLoading, setLoadingError, location.state]);
+  }, [location.state]); // Remove function dependencies since they're now memoized
 
   // Handle preference changes
   const handlePreferencesChange = (newPreferences) => {
