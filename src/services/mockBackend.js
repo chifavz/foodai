@@ -2,12 +2,12 @@
 // Step 2: Connect Sophia to the Mock
 
 async function fetchRestaurants() {
-  const response = await fetch("http://localhost:5001/restaurants");
+  const response = await fetch("http://localhost:8000/restaurants");
   return response.json();
 }
 
 async function fetchMenu(restaurantId) {
-  const response = await fetch(`http://localhost:5001/restaurants/${restaurantId}/menu`);
+  const response = await fetch(`http://localhost:8000/restaurants/${restaurantId}/menu`);
   return response.json();
 }
 
