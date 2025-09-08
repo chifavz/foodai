@@ -9,13 +9,20 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.2",
     "express": "^4.18.2",
-    "cors": "^2.8.5"
+    "pg": "^8.16.3"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
   },
-  "keywords": ["restaurant", "food", "api", "aggregator"],
+  "keywords": [
+    "restaurant",
+    "food",
+    "api",
+    "aggregator"
+  ],
   "author": "FoodAI Team",
   "license": "MIT"
 }

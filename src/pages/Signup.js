@@ -19,7 +19,7 @@ export default function Signup() {
     
     try {
       // Replace the URL below with your backend endpoint
-      await axios.post('http://localhost:5000/api/signup', form);
+      await axios.post('http://localhost:8000/api/signup', form);
       
       // For demo purposes, create mock user and navigate
       const mockUser = {

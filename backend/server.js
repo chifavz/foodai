@@ -1,10 +1,34 @@
 // Restaurant Aggregator Backend - Direct Partnership System
 // Handles meal filtering based on user preferences instead of relying on third-party platforms
 
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const { Pool } = require('pg');
 const app = express();
 const PORT = process.env.PORT || 8000;
+
+// PostgreSQL connection
+const pool = new Pool({
+  user: process.env.DB_USER || 'postgres',
+  host: process.env.DB_HOST || 'localhost',
+  database: process.env.DB_NAME || 'foodai',
+  password: process.env.DB_PASSWORD || 'password',
+  port: process.env.DB_PORT || 5432,
+});
+
+// Test database connection
+let databaseConnected = false;
+pool.connect()
+  .then(() => {
+    console.log('PostgreSQL connected');
+    databaseConnected = true;
+    initializeDatabase();
+  })
+  .catch(err => {
+    console.log('PostgreSQL connection failed, using in-memory data:', err.message);
+    databaseConnected = false;
+  });
 
 // Middleware
 app.use(cors());
@@ -53,6 +77,86 @@ const restaurants = [
     api_endpoint: null
   }
 ];
+
+// Database initialization
+async function initializeDatabase() {
+  try {
+    // Create tables if they don't exist
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS restaurants (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        cuisine VARCHAR(100) NOT NULL,
+        location VARCHAR(255) NOT NULL,
+        partnership_type VARCHAR(50) DEFAULT 'direct',
+        api_endpoint VARCHAR(255)
+      )
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS meals (
+        id SERIAL PRIMARY KEY,
+        restaurant_id INTEGER REFERENCES restaurants(id),
+        name VARCHAR(255) NOT NULL,
+        price DECIMAL(10,2) NOT NULL,
+        description TEXT,
+        category VARCHAR(100),
+        chef VARCHAR(255),
+        rating DECIMAL(3,2),
+        image VARCHAR(10),
+        allergens TEXT[],
+        cuisine VARCHAR(100),
+        diet VARCHAR(50),
+        available BOOLEAN DEFAULT true,
+        restaurant_name VARCHAR(255)
+      )
+    `);
+
+    // Check if data exists, if not, populate with sample data
+    const restaurantCount = await pool.query('SELECT COUNT(*) FROM restaurants');
+    if (parseInt(restaurantCount.rows[0].count) === 0) {
+      await populateSampleData();
+    }
+
+    console.log('Database synced');
+  } catch (error) {
+    console.error('Database initialization failed:', error.message);
+  }
+}
+
+async function populateSampleData() {
+  try {
+    // Insert restaurants
+    for (const restaurant of restaurants) {
+      await pool.query(
+        'INSERT INTO restaurants (name, cuisine, location, partnership_type, api_endpoint) VALUES ($1, $2, $3, $4, $5)',
+        [restaurant.name, restaurant.cuisine, restaurant.location, restaurant.partnership_type, restaurant.api_endpoint]
+      );
+    }
+
+    // Insert meals
+    for (const meal of meals) {
+      await pool.query(
+        'INSERT INTO meals (restaurant_id, name, price, description, category, chef, rating, image, allergens, cuisine, diet, available, restaurant_name) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)',
+        [meal.restaurant_id, meal.name, meal.price, meal.description, meal.category, meal.chef, meal.rating, meal.image, meal.allergens, meal.cuisine, meal.diet, meal.available, meal.restaurant_name]
+      );
+    }
+
+    console.log('Sample data populated');
+  } catch (error) {
+    console.error('Failed to populate sample data:', error.message);
+  }
+}
 
 const meals = [
   {
@@ -206,6 +310,124 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Restaurant Aggregator API is running' });
 });
 
+// Authentication endpoints
+app.post('/api/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+
+    if (databaseConnected) {
+      // Try to find user in database
+      const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+      if (result.rows.length > 0) {
+        const user = result.rows[0];
+        // In a real app, you'd hash and compare passwords
+        if (password) { // Simple check for demo
+          return res.json({
+            user: {
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              preferences: {
+                cuisineTypes: ['Italian', 'Asian'],
+                dietaryRestrictions: [],
+                servicePreference: 'dine-in'
+              }
+            },
+            token: 'mock-token-' + user.id
+          });
+        }
+      }
+    }
+
+    // Fallback for demo purposes
+    if (email && password) {
+      const mockUser = {
+        id: 1,
+        name: email.split('@')[0] || 'User',
+        email: email,
+        preferences: {
+          cuisineTypes: ['Italian', 'Asian'],
+          dietaryRestrictions: [],
+          servicePreference: 'dine-in'
+        }
+      };
+      return res.json({
+        user: mockUser,
+        token: 'mock-token'
+      });
+    }
+
+    res.status(401).json({ error: 'Invalid credentials' });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ error: 'Login failed' });
+  }
+});
+
+app.post('/api/signup', async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+    
+    if (!name || !email || !password) {
+      return res.status(400).json({ error: 'Name, email, and password are required' });
+    }
+
+    if (databaseConnected) {
+      try {
+        // Try to insert new user into database
+        const result = await pool.query(
+          'INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING id, name, email',
+          [name, email, password] // In real app, hash the password
+        );
+        
+        const user = result.rows[0];
+        return res.json({
+          user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            preferences: {
+              cuisineTypes: [],
+              dietaryRestrictions: [],
+              servicePreference: 'dine-in'
+            }
+          },
+          token: 'mock-token-' + user.id
+        });
+      } catch (dbError) {
+        if (dbError.code === '23505') { // Unique violation
+          return res.status(409).json({ error: 'Email already exists' });
+        }
+        throw dbError;
+      }
+    }
+
+    // Fallback for demo purposes
+    const mockUser = {
+      id: Date.now(),
+      name: name,
+      email: email,
+      preferences: {
+        cuisineTypes: [],
+        dietaryRestrictions: [],
+        servicePreference: 'dine-in'
+      }
+    };
+
+    res.json({
+      user: mockUser,
+      token: 'mock-token'
+    });
+  } catch (error) {
+    console.error('Signup error:', error);
+    res.status(500).json({ error: 'Signup failed' });
+  }
+});
+
 // Main meals endpoint - filters meals based on user preferences
 app.get('/api/meals', (req, res) => {
   try {
@@ -356,11 +578,24 @@ app.get('/api/menu/items', (req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`🍽️  Restaurant Aggregator API running on port ${PORT}`);
   console.log(`📡 API endpoint: http://localhost:${PORT}/api/meals`);
-  console.log(`🏪 Direct partnerships with ${restaurants.length} restaurants`);
-  console.log(`🍽️  ${meals.filter(meal => meal.available).length} meals available`);
+  
+  if (databaseConnected) {
+    try {
+      const restaurantCount = await pool.query('SELECT COUNT(*) FROM restaurants');
+      const mealCount = await pool.query('SELECT COUNT(*) FROM meals WHERE available = true');
+      console.log(`🏪 Direct partnerships with ${restaurantCount.rows[0].count} restaurants`);
+      console.log(`🍽️  ${mealCount.rows[0].count} meals available`);
+    } catch (error) {
+      console.log(`🏪 Direct partnerships with ${restaurants.length} restaurants`);
+      console.log(`🍽️  ${meals.filter(meal => meal.available).length} meals available`);
+    }
+  } else {
+    console.log(`🏪 Direct partnerships with ${restaurants.length} restaurants`);
+    console.log(`🍽️  ${meals.filter(meal => meal.available).length} meals available`);
+  }
 });
 
 module.exports = app;
