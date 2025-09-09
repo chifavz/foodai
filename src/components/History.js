@@ -60,10 +60,8 @@ function History() {
             }
           ];
           
-          // Save mock orders using API service
-          for (const order of mockOrders) {
-            await apiService.placeOrder(order);
-          }
+          // Save mock orders directly to localStorage to avoid duplication
+          localStorage.setItem('orderHistory', JSON.stringify(mockOrders));
           orderHistory = mockOrders;
         }
         
