@@ -577,6 +577,40 @@ app.get('/api/menu/items', (req, res) => {
   res.json(availableMeals);
 });
 
+// User Profile endpoints
+app.get('/api/user/profile', (req, res) => {
+  // For now, return empty profile - frontend will use localStorage fallback
+  // In a real implementation, this would fetch from database with user authentication
+  res.json({});
+});
+
+app.post('/api/user/profile', (req, res) => {
+  // For now, just return the posted profile
+  // In a real implementation, this would save to database with user authentication
+  const profile = req.body;
+  res.json(profile);
+});
+
+// Cart endpoints
+app.get('/api/cart', (req, res) => {
+  // For now, return empty cart - frontend will use localStorage fallback
+  // In a real implementation, this would fetch from database/session with user authentication
+  res.json({ cart: [] });
+});
+
+app.post('/api/cart', (req, res) => {
+  // For now, just return the posted cart
+  // In a real implementation, this would save to database/session with user authentication
+  const { cart } = req.body;
+  res.json({ cart: cart || [] });
+});
+
+app.delete('/api/cart', (req, res) => {
+  // For now, just return success
+  // In a real implementation, this would clear the cart in database/session
+  res.json({ success: true, cart: [] });
+});
+
 // Start server
 app.listen(PORT, async () => {
   console.log(`🍽️  Restaurant Aggregator API running on port ${PORT}`);
