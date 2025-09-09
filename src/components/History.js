@@ -24,8 +24,8 @@ function History() {
               date: '2024-01-15',
               time: '7:30 PM',
               items: [
-                { name: 'Grilled Salmon', chef: 'Chef Mario', price: 28, rating: 5 },
-                { name: 'Caesar Salad', chef: 'Chef Mario', price: 15, rating: 4 }
+                { id: 1, name: 'Grilled Salmon', chef: 'Chef Mario', price: 28, rating: 5, quantity: 1 },
+                { id: 2, name: 'Caesar Salad', chef: 'Chef Mario', price: 15, rating: 4, quantity: 1 }
               ],
               total: 43,
               status: 'Delivered',
@@ -37,8 +37,8 @@ function History() {
               date: '2024-01-12',
               time: '6:45 PM',
               items: [
-                { name: 'Beef Wellington', chef: 'Chef Isabella', price: 35, rating: 0 },
-                { name: 'Chocolate Soufflé', chef: 'Chef Pierre', price: 12, rating: 0 }
+                { id: 3, name: 'Beef Wellington', chef: 'Chef Isabella', price: 35, rating: 0, quantity: 1 },
+                { id: 4, name: 'Chocolate Soufflé', chef: 'Chef Pierre', price: 12, rating: 0, quantity: 2 }
               ],
               total: 47,
               status: 'Delivered',
@@ -50,8 +50,8 @@ function History() {
               date: '2024-01-10',
               time: '8:15 PM',
               items: [
-                { name: 'Margherita Pizza', chef: 'Chef Antonio', price: 22, rating: 4 },
-                { name: 'Lobster Bisque', chef: 'Chef Isabella', price: 18, rating: 5 }
+                { id: 5, name: 'Margherita Pizza', chef: 'Chef Antonio', price: 22, rating: 4, quantity: 1 },
+                { id: 6, name: 'Lobster Bisque', chef: 'Chef Isabella', price: 18, rating: 5, quantity: 1 }
               ],
               total: 40,
               status: 'Delivered',
