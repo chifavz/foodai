@@ -19,7 +19,7 @@ export default function Feedback() {
       try {
         const orderHistory = await apiService.getOrderHistory();
         // Filter for delivered orders only
-        const deliveredOrders = orderHistory.filter(order => order.status === 'delivered');
+        const deliveredOrders = orderHistory.filter(order => order.status === 'Delivered');
         setOrders(deliveredOrders);
         
         // Auto-select the most recent delivered order
@@ -71,14 +71,10 @@ export default function Feedback() {
 
     startLoading();
     try {
-      const feedbackData = {
-        orderId: selectedOrder.id,
-        ratings,
-        feedback,
-        date: new Date().toLocaleString()
-      };
-
-      await apiService.submitOrderRating(selectedOrder.id, feedbackData);
+      // Convert ratings object (by item.id) to array (by index) to match API expectation
+      const ratingsArray = selectedOrder.items.map(item => ratings[item.id] || 5);
+      
+      await apiService.updateOrderRating(selectedOrder.id, ratingsArray);
       setSubmitted(true);
       stopLoading();
     } catch (error) {
