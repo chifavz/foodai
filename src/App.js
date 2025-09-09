@@ -11,6 +11,7 @@ import AIWaitress from './components/AIWaitress';
 import ProfileSetup from './components/ProfileSetup';
 import OrderRedirect from './components/OrderRedirect';
 import History from './components/History';
+import Projects from './components/Projects';
 
 import MealFinder from './components/MealFinder';
 
@@ -44,6 +45,7 @@ function App() {
               <Route path="/profile-setup" element={<ProfileSetup />} />
               <Route path="/checkout" element={<OrderRedirect />} />
               <Route path="/history" element={<History />} />
+              <Route path="/projects" element={<Projects />} />
 
               <Route path="/meal-finder" element={<MealFinder />} />
 
