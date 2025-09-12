@@ -1,5 +1,6 @@
 // API Service Layer for FoodAI Backend Integration
 import yelpService from './yelpService';
+import googlePlacesService from './googlePlacesService';
 import menuApiService from './menuApiService';
 
 class ApiService {
@@ -8,6 +9,7 @@ class ApiService {
     this.backendUrl = process.env.REACT_APP_BACKEND_URL || 'https://api.aifoodback.example.com';
     this.isBackendAvailable = false;
     this.yelpService = yelpService;
+    this.googlePlacesService = googlePlacesService;
     this.menuApiService = menuApiService;
     this.checkBackendConnection();
   }
@@ -196,13 +198,110 @@ class ApiService {
     }
   }
 
-  // Legacy Yelp integration methods (for backward compatibility)
-  async searchRestaurants(location, term = 'restaurants', limit = 20) {
-    return await this.yelpService.searchBusinesses(location, term, limit);
+  // Restaurant Discovery API - Enhanced with multiple providers
+  async searchRestaurants(location, term = 'restaurants', limit = 20, provider = 'auto') {
+    // Auto-select provider based on availability
+    if (provider === 'auto') {
+      if (this.googlePlacesService.isConfigured()) {
+        provider = 'google';
+      } else if (this.yelpService.isConfigured()) {
+        provider = 'yelp';
+      } else {
+        provider = 'fallback';
+      }
+    }
+
+    try {
+      let results = [];
+      
+      switch (provider) {
+        case 'google':
+          results = await this.googlePlacesService.searchRestaurants(location, term);
+          break;
+        case 'yelp':
+          results = await this.yelpService.searchBusinesses(location, term, limit);
+          break;
+        case 'both':
+          // Get results from both services and merge them
+          const [googleResults, yelpResults] = await Promise.allSettled([
+            this.googlePlacesService.searchRestaurants(location, term),
+            this.yelpService.searchBusinesses(location, term, limit)
+          ]);
+          
+          results = [
+            ...(googleResults.status === 'fulfilled' ? googleResults.value : []),
+            ...(yelpResults.status === 'fulfilled' ? yelpResults.value : [])
+          ];
+          
+          // Remove duplicates based on name and location
+          results = this.deduplicateRestaurants(results);
+          break;
+        default:
+          // Fallback to combined fallback data
+          results = [
+            ...this.googlePlacesService.getFallbackRestaurants(location, term),
+            ...this.yelpService.getFallbackRestaurants()
+          ];
+      }
+
+      // Limit results if specified
+      if (limit && results.length > limit) {
+        results = results.slice(0, limit);
+      }
+
+      return results;
+    } catch (error) {
+      console.error('Restaurant search failed:', error);
+      // Return combined fallback data on error
+      return [
+        ...this.googlePlacesService.getFallbackRestaurants(location, term),
+        ...this.yelpService.getFallbackRestaurants()
+      ].slice(0, limit || 20);
+    }
   }
 
-  async getRestaurantDetails(restaurantId) {
-    return await this.yelpService.getBusinessDetails(restaurantId);
+  async getRestaurantDetails(restaurantId, provider = 'auto') {
+    // Auto-detect provider based on ID format or source
+    if (provider === 'auto') {
+      if (restaurantId.startsWith('google-') || restaurantId.includes('ChIJ')) {
+        provider = 'google';
+      } else {
+        provider = 'yelp';
+      }
+    }
+
+    try {
+      switch (provider) {
+        case 'google':
+          return await this.googlePlacesService.getPlaceDetails(restaurantId);
+        case 'yelp':
+          return await this.yelpService.getBusinessDetails(restaurantId);
+        default:
+          // Try both services
+          const googleResult = await this.googlePlacesService.getPlaceDetails(restaurantId);
+          if (googleResult) return googleResult;
+          
+          return await this.yelpService.getBusinessDetails(restaurantId);
+      }
+    } catch (error) {
+      console.error('Restaurant details fetch failed:', error);
+      // Return fallback details
+      return this.googlePlacesService.getFallbackRestaurantDetails(restaurantId) ||
+             this.yelpService.getFallbackRestaurantDetails(restaurantId);
+    }
+  }
+
+  // Helper method to remove duplicate restaurants from merged results
+  deduplicateRestaurants(restaurants) {
+    const seen = new Set();
+    return restaurants.filter(restaurant => {
+      const key = `${restaurant.name.toLowerCase()}-${restaurant.location?.city?.toLowerCase()}`;
+      if (seen.has(key)) {
+        return false;
+      }
+      seen.add(key);
+      return true;
+    });
   }
 
   // New menu API integration methods
@@ -530,21 +629,22 @@ class ApiService {
     return ((hasRestaurantKeyword || hasCuisineKeyword) && (hasLocationKeyword || hasDiscoveryKeyword));
   }
 
+  // Enhanced restaurant discovery for AI responses
   async handleRestaurantDiscovery(userMessage, context = {}) {
     try {
       // Extract location and cuisine from the message
       const location = this.extractLocation(userMessage) || 'downtown';
       const cuisine = this.extractCuisine(userMessage) || 'restaurants';
 
-      // Search for restaurants using Yelp service
-      const restaurants = await this.searchRestaurants(location, cuisine, 5);
+      // Use enhanced search with multiple providers
+      const restaurants = await this.searchRestaurants(location, cuisine, 5, 'both');
 
       if (restaurants && restaurants.length > 0) {
         const restaurantList = restaurants.map((restaurant, index) => 
-          `${index + 1}. **${restaurant.name}** (${restaurant.rating}⭐) - ${restaurant.categories?.join(', ') || cuisine}\n   📍 ${restaurant.location?.address1 || 'Address not available'}\n   💰 ${restaurant.price || 'Price not available'}`
+          `${index + 1}. **${restaurant.name}** (${restaurant.rating}⭐) - ${restaurant.categories?.join(', ') || cuisine}\n   📍 ${restaurant.location?.address1 || 'Address not available'}\n   💰 ${restaurant.price || 'Price not available'}${restaurant.source === 'google_places' ? ' 🅶' : restaurant.source === 'yelp' ? ' 🅱' : ''}`
         ).join('\n\n');
 
-        return `Great! I found some excellent ${cuisine} restaurants ${location}:\n\n${restaurantList}\n\nWould you like to see the menu for any of these restaurants? Just let me know which one interests you!`;
+        return `Great! I found some excellent ${cuisine} restaurants ${location}:\n\n${restaurantList}\n\n${restaurants.some(r => r.source === 'google_places') ? '🅶 = Google Places' : ''}${restaurants.some(r => r.source === 'yelp') ? (restaurants.some(r => r.source === 'google_places') ? ' | ' : '') + '🅱 = Yelp' : ''}\n\nWould you like to see the menu for any of these restaurants? Just let me know which one interests you!`;
       } else {
         return `I'm sorry, I couldn't find specific restaurants in that area right now. However, I can show you our current menu with some amazing dishes! We have Italian options like Margherita Pizza, fresh Grilled Salmon, and more. Would you like to browse our available dishes?`;
       }
