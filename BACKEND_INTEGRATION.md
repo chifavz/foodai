@@ -11,7 +11,7 @@ The FoodAI frontend has been enhanced with multiple API integrations including t
 Create a `.env` file in the root directory with the following configuration:
 
 ```env
-REACT_APP_API_BASE_URL=http://localhost:8000/api
+REACT_APP_API_BASE_URL=http://localhost:5000/api
 REACT_APP_BACKEND_URL=https://api.aifoodback.example.com
 
 # External API Integrations
