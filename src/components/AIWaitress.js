@@ -183,6 +183,62 @@ function AIWaitress() {
 
       const userMessage = messageToProcess.toLowerCase();
 
+      // Check if this is a restaurant discovery request using the API service logic
+      if (apiService.isRestaurantDiscoveryRequest(userMessage)) {
+        try {
+          // Extract location, cuisine, and price from the message
+          const location = apiService.extractLocation(messageToProcess) || 'downtown';
+          const cuisine = apiService.extractCuisine(messageToProcess) || 'restaurants';
+          const maxPrice = apiService.extractPrice(messageToProcess);
+
+          // Use enhanced search with multiple providers
+          const restaurants = await apiService.searchRestaurants(location, cuisine, 5, 'both');
+
+          if (restaurants && restaurants.length > 0) {
+            // Filter by price if specified
+            let filteredRestaurants = restaurants;
+            if (maxPrice) {
+              filteredRestaurants = restaurants.filter(restaurant => {
+                if (restaurant.price) {
+                  // Extract numeric value from price (e.g., "$" = 1, "$$" = 2, etc.)
+                  const priceLevel = restaurant.price.length || 2;
+                  const estimatedPrice = priceLevel * 12; // Rough estimation: $ = $12, $$ = $24, etc.
+                  return estimatedPrice <= maxPrice;
+                }
+                return true; // Include restaurants without price info
+              });
+            }
+
+            if (filteredRestaurants.length > 0) {
+              const priceNote = maxPrice ? ` under $${maxPrice}` : '';
+              const responseText = `Great! I found ${filteredRestaurants.length} excellent ${cuisine} restaurant${filteredRestaurants.length > 1 ? 's' : ''}${priceNote} ${location}:`;
+              
+              // Add the response text first
+              addMessage('ai', responseText);
+              
+              // Then add the restaurant cards
+              addMessage('ai', filteredRestaurants, 'restaurants');
+              
+              setIsTyping(false);
+              return;
+            } else {
+              addMessage('ai', `I found some ${cuisine} restaurants ${location}, but none within your budget of $${maxPrice}. Would you like to:\n1. Increase your budget range\n2. Browse our current menu for affordable options\n3. Try a different cuisine type`);
+              setIsTyping(false);
+              return;
+            }
+          } else {
+            addMessage('ai', `I'm sorry, I couldn't find specific restaurants in that area right now. However, I can show you our current menu with some amazing dishes! We have Italian options like Margherita Pizza, fresh Grilled Salmon, and more. Would you like to browse our available dishes?`);
+            setIsTyping(false);
+            return;
+          }
+        } catch (error) {
+          console.error('Restaurant discovery failed:', error);
+          addMessage('ai', `I'd love to help you find restaurants! While I search for options, would you like to browse our current menu? We have some fantastic dishes available right now.`);
+          setIsTyping(false);
+          return;
+        }
+      }
+
       // Show partner restaurants
       if (userMessage.includes('show me all restaurants') || userMessage.includes('restaurants')) {
         const restaurants = await RestaurantService.getPartnerRestaurants();
@@ -519,6 +575,7 @@ function AIWaitress() {
                   {message.type && message.type !== 'text' ? (
                     <>
                       {message.type === 'restaurants' && (
+
                         <div className="cards">
                           {Array.isArray(message.content) && message.content.map(r => (
                             <div key={r.id} className="card border border-gray-200 p-3 mb-2 rounded-lg bg-white">
@@ -529,6 +586,100 @@ function AIWaitress() {
                                   Order / Visit
                                 </a>
                               )}
+
+                        <div className="space-y-3">
+                          {message.content.map(r => (
+                            <div key={r.id || r.name} className="border border-gray-200 p-4 rounded-lg bg-white shadow-sm hover:shadow-md transition-shadow">
+                              {/* Restaurant Header */}
+                              <div className="flex justify-between items-start mb-2">
+                                <h4 className="font-semibold text-gray-900 text-lg">{r.name}</h4>
+                                <div className="flex items-center space-x-1">
+                                  <span className="text-yellow-500">⭐</span>
+                                  <span className="text-sm text-gray-600">{r.rating || 'N/A'}</span>
+                                </div>
+                              </div>
+                              
+                              {/* Cuisine Type */}
+                              <p className="text-sm text-gray-600 mb-2">
+                                {r.categories?.join(' • ') || r.cuisine || 'Restaurant'}
+                              </p>
+                              
+                              {/* Address */}
+                              <div className="flex items-start space-x-2 mb-2">
+                                <span className="text-gray-500">📍</span>
+                                <p className="text-sm text-gray-700">
+                                  {r.location?.address1 || r.location || 'Address not available'}
+                                  {r.location?.city && `, ${r.location.city}`}
+                                </p>
+                              </div>
+                              
+                              {/* Hours & Price */}
+                              <div className="flex justify-between items-center mb-3">
+                                <div className="flex items-center space-x-4">
+                                  <span className={`text-xs px-2 py-1 rounded-full ${
+                                    r.is_closed === false 
+                                      ? 'bg-green-100 text-green-800' 
+                                      : r.is_closed === true 
+                                        ? 'bg-red-100 text-red-800' 
+                                        : 'bg-gray-100 text-gray-800'
+                                  }`}>
+                                    {r.is_closed === false ? '🟢 Open Now' : 
+                                     r.is_closed === true ? '🔴 Closed' : 
+                                     '❓ Hours Unknown'}
+                                  </span>
+                                  <span className="text-sm font-medium text-green-600">
+                                    {r.price || 'Price varies'}
+                                  </span>
+                                </div>
+                              </div>
+                              
+                              {/* Service Options */}
+                              <div className="flex flex-wrap gap-2 mb-3">
+                                <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                                  🍽️ Dine-in
+                                </span>
+                                {(r.phone || r.display_phone) && (
+                                  <span className="text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded-full">
+                                    📱 Pickup
+                                  </span>
+                                )}
+                                <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                                  🚚 Delivery
+                                </span>
+                              </div>
+                              
+                              {/* Action Buttons */}
+                              <div className="flex space-x-2">
+                                {r.url && (
+                                  <a 
+                                    href={r.url} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer" 
+                                    className="flex-1 text-center px-3 py-2 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
+                                  >
+                                    📋 View Menu
+                                  </a>
+                                )}
+                                {(r.phone || r.display_phone) && (
+                                  <a 
+                                    href={`tel:${r.phone || r.display_phone}`}
+                                    className="flex-1 text-center px-3 py-2 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition-colors"
+                                  >
+                                    📞 Call to Order
+                                  </a>
+                                )}
+                                {r.affiliateLink && (
+                                  <a 
+                                    href={r.affiliateLink} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer" 
+                                    className="flex-1 text-center px-3 py-2 bg-purple-600 text-white text-xs rounded hover:bg-purple-700 transition-colors"
+                                  >
+                                    🛒 Order Online
+                                  </a>
+                                )}
+                              </div>
+
                             </div>
                           ))}
                         </div>
