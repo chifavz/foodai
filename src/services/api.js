@@ -618,33 +618,58 @@ class ApiService {
   isRestaurantDiscoveryRequest(message) {
     const restaurantKeywords = ['restaurant', 'place to eat', 'dining', 'eatery', 'cafe', 'bistro'];
     const locationKeywords = ['nearby', 'near me', 'around', 'location', 'area'];
-    const cuisineKeywords = ['italian', 'chinese', 'mexican', 'thai', 'indian', 'french', 'japanese', 'korean', 'pizza', 'sushi', 'burger'];
-    const discoveryKeywords = ['find', 'search', 'looking for', 'recommend', 'suggest', 'discover'];
+    const cuisineKeywords = ['italian', 'chinese', 'mexican', 'thai', 'indian', 'french', 'japanese', 'korean', 'pizza', 'sushi', 'burger', 'tacos', 'burrito', 'quesadilla', 'noodles', 'pasta'];
+    const discoveryKeywords = ['find', 'search', 'looking for', 'recommend', 'suggest', 'discover', 'show me', 'where can i'];
+    const priceKeywords = ['under', 'below', 'less than', 'budget', 'cheap', 'affordable', '$'];
 
     const hasRestaurantKeyword = restaurantKeywords.some(keyword => message.includes(keyword));
     const hasLocationKeyword = locationKeywords.some(keyword => message.includes(keyword));
     const hasCuisineKeyword = cuisineKeywords.some(keyword => message.includes(keyword));
     const hasDiscoveryKeyword = discoveryKeywords.some(keyword => message.includes(keyword));
+    const hasPriceKeyword = priceKeywords.some(keyword => message.includes(keyword));
 
-    return ((hasRestaurantKeyword || hasCuisineKeyword) && (hasLocationKeyword || hasDiscoveryKeyword));
+    // Enhanced logic to catch more restaurant discovery requests
+    return (hasDiscoveryKeyword && (hasCuisineKeyword || hasLocationKeyword || hasRestaurantKeyword || hasPriceKeyword)) ||
+           (hasCuisineKeyword && (hasLocationKeyword || hasDiscoveryKeyword)) ||
+           (hasRestaurantKeyword && (hasLocationKeyword || hasDiscoveryKeyword));
   }
 
   // Enhanced restaurant discovery for AI responses
   async handleRestaurantDiscovery(userMessage, context = {}) {
     try {
-      // Extract location and cuisine from the message
+      // Extract location, cuisine, and price from the message
       const location = this.extractLocation(userMessage) || 'downtown';
       const cuisine = this.extractCuisine(userMessage) || 'restaurants';
+      const maxPrice = this.extractPrice(userMessage);
 
       // Use enhanced search with multiple providers
       const restaurants = await this.searchRestaurants(location, cuisine, 5, 'both');
 
       if (restaurants && restaurants.length > 0) {
-        const restaurantList = restaurants.map((restaurant, index) => 
-          `${index + 1}. **${restaurant.name}** (${restaurant.rating}⭐) - ${restaurant.categories?.join(', ') || cuisine}\n   📍 ${restaurant.location?.address1 || 'Address not available'}\n   💰 ${restaurant.price || 'Price not available'}${restaurant.source === 'google_places' ? ' 🅶' : restaurant.source === 'yelp' ? ' 🅱' : ''}`
-        ).join('\n\n');
+        // Filter by price if specified
+        let filteredRestaurants = restaurants;
+        if (maxPrice) {
+          filteredRestaurants = restaurants.filter(restaurant => {
+            if (restaurant.price) {
+              // Extract numeric value from price (e.g., "$" = 1, "$$" = 2, etc.)
+              const priceLevel = restaurant.price.length || 2;
+              const estimatedPrice = priceLevel * 12; // Rough estimation: $ = $12, $$ = $24, etc.
+              return estimatedPrice <= maxPrice;
+            }
+            return true; // Include restaurants without price info
+          });
+        }
 
-        return `Great! I found some excellent ${cuisine} restaurants ${location}:\n\n${restaurantList}\n\n${restaurants.some(r => r.source === 'google_places') ? '🅶 = Google Places' : ''}${restaurants.some(r => r.source === 'yelp') ? (restaurants.some(r => r.source === 'google_places') ? ' | ' : '') + '🅱 = Yelp' : ''}\n\nWould you like to see the menu for any of these restaurants? Just let me know which one interests you!`;
+        if (filteredRestaurants.length > 0) {
+          const restaurantList = filteredRestaurants.map((restaurant, index) => 
+            `${index + 1}. **${restaurant.name}** (${restaurant.rating}⭐) - ${restaurant.categories?.join(', ') || cuisine}\n   📍 ${restaurant.location?.address1 || 'Address not available'}\n   💰 ${restaurant.price || 'Price not available'} ${restaurant.is_closed === false ? '🟢 Open' : restaurant.is_closed === true ? '🔴 Closed' : '❓ Hours unknown'}\n   🚗 ${this.getServiceIcons(restaurant)}${restaurant.source === 'google_places' ? ' 🅶' : restaurant.source === 'yelp' ? ' 🅱' : ''}`
+          ).join('\n\n');
+
+          const priceNote = maxPrice ? ` under $${maxPrice}` : '';
+          return `Great! I found ${filteredRestaurants.length} excellent ${cuisine} restaurant${filteredRestaurants.length > 1 ? 's' : ''}${priceNote} ${location}:\n\n${restaurantList}\n\n${filteredRestaurants.some(r => r.source === 'google_places') ? '🅶 = Google Places' : ''}${filteredRestaurants.some(r => r.source === 'yelp') ? (filteredRestaurants.some(r => r.source === 'google_places') ? ' | ' : '') + '🅱 = Yelp' : ''}\n\nWould you like to see the menu for any of these restaurants? Just let me know which one interests you!`;
+        } else {
+          return `I found some ${cuisine} restaurants ${location}, but none within your budget of $${maxPrice}. Would you like to:\n1. Increase your budget range\n2. Browse our current menu for affordable options\n3. Try a different cuisine type`;
+        }
       } else {
         return `I'm sorry, I couldn't find specific restaurants in that area right now. However, I can show you our current menu with some amazing dishes! We have Italian options like Margherita Pizza, fresh Grilled Salmon, and more. Would you like to browse our available dishes?`;
       }
@@ -652,6 +677,23 @@ class ApiService {
       console.error('Restaurant discovery failed:', error);
       return `I'd love to help you find restaurants! While I search for options, would you like to browse our current menu? We have some fantastic dishes available right now.`;
     }
+  }
+
+  getServiceIcons(restaurant) {
+    // Generate service type icons based on restaurant data
+    const services = [];
+    
+    // Most restaurants support these, so we'll show them unless specifically noted otherwise
+    services.push('🍽️ Dine-in');
+    
+    if (restaurant.phone || restaurant.display_phone) {
+      services.push('📱 Pickup');
+    }
+    
+    // Assume delivery is available for most restaurants
+    services.push('🚚 Delivery');
+    
+    return services.join(' ');
   }
 
   extractLocation(message) {
@@ -693,6 +735,27 @@ class ApiService {
     }
     
     return 'restaurants';
+  }
+
+  extractPrice(message) {
+    // Extract price constraints from natural language
+    const pricePatterns = [
+      /under\s*\$?(\d+)/i,
+      /below\s*\$?(\d+)/i,
+      /less\s+than\s*\$?(\d+)/i,
+      /\$(\d+)\s*or\s+less/i,
+      /maximum\s*\$?(\d+)/i,
+      /max\s*\$?(\d+)/i,
+      /budget\s*\$?(\d+)/i
+    ];
+
+    for (const pattern of pricePatterns) {
+      const match = message.match(pattern);
+      if (match && match[1]) {
+        return parseFloat(match[1]);
+      }
+    }
+    return null;
   }
 
   getLocalAIResponse(userMessage, context = {}) {
