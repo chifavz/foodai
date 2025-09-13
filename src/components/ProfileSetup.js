@@ -105,21 +105,21 @@ function ProfileSetup() {
           <form onSubmit={handleSubmit} className="space-y-8">
             {/* Basic Info */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Name (Optional)
               </label>
               <input
                 type="text"
                 value={profile.name}
                 onChange={(e) => handleInputChange('name', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 placeholder="Enter your name"
               />
             </div>
 
             {/* Dietary Restrictions */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                 Dietary Restrictions
               </label>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -131,7 +131,7 @@ function ProfileSetup() {
                     className={`px-4 py-2 rounded-lg transition-colors ${
                       profile.dietaryRestrictions.includes(option)
                         ? 'bg-blue-600 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                     }`}
                   >
                     {option}
@@ -142,7 +142,7 @@ function ProfileSetup() {
 
             {/* Allergies */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                 Allergies
               </label>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -154,7 +154,7 @@ function ProfileSetup() {
                     className={`px-4 py-2 rounded-lg transition-colors ${
                       profile.allergies.includes(option)
                         ? 'bg-red-600 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                     }`}
                   >
                     {option}
@@ -165,7 +165,7 @@ function ProfileSetup() {
 
             {/* Cuisine Preferences */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                 Favorite Cuisines
               </label>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -177,7 +177,7 @@ function ProfileSetup() {
                     className={`px-4 py-2 rounded-lg transition-colors ${
                       profile.cuisinePreferences.includes(option)
                         ? 'bg-green-600 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                     }`}
                   >
                     {option}
@@ -188,7 +188,7 @@ function ProfileSetup() {
 
             {/* Health Goals */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                 Health & Dietary Goals
               </label>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -200,7 +200,7 @@ function ProfileSetup() {
                     className={`px-4 py-2 rounded-lg transition-colors ${
                       profile.goals.includes(option)
                         ? 'bg-purple-600 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                     }`}
                   >
                     {option}
@@ -211,13 +211,13 @@ function ProfileSetup() {
 
             {/* Budget Range */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Budget Range per Meal
               </label>
               <select
                 value={profile.budgetRange}
                 onChange={(e) => handleInputChange('budgetRange', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               >
                 <option value="">Select budget range</option>
                 <option value="$10-20">$10 - $20</option>
@@ -229,13 +229,13 @@ function ProfileSetup() {
 
             {/* Meal Frequency */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 How often do you order food?
               </label>
               <select
                 value={profile.mealFrequency}
                 onChange={(e) => handleInputChange('mealFrequency', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               >
                 <option value="">Select frequency</option>
                 <option value="daily">Daily</option>
@@ -248,7 +248,7 @@ function ProfileSetup() {
 
             {/* Service Preference */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                 Preferred Dining Style
               </label>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -259,8 +259,8 @@ function ProfileSetup() {
                     onClick={() => handleInputChange('servicePreference', option.value)}
                     className={`p-4 rounded-lg border-2 transition-all ${
                       profile.servicePreference === option.value
-                        ? 'border-blue-600 bg-blue-50 text-blue-900'
-                        : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                        ? 'border-blue-600 bg-blue-50 dark:bg-blue-900 text-blue-900 dark:text-blue-100'
+                        : 'border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-500'
                     }`}
                   >
                     <div className="text-3xl mb-2">{option.icon}</div>
@@ -275,7 +275,7 @@ function ProfileSetup() {
             <div className="flex justify-center pt-6">
               <button
                 type="submit"
-                className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors font-semibold text-lg"
+                className="bg-blue-600 dark:bg-blue-700 text-white px-8 py-3 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-800 transition-colors font-semibold text-lg"
               >
                 Save Profile & Continue to Menu
               </button>
