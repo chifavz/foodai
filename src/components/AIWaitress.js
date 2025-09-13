@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import MealService from '../services/MealService';
 import RestaurantService from '../services/RestaurantService';
 import apiService from '../services/api';
+import ActionCard from './ActionCard';
 
 // Mock function for restaurants (since fetchRestaurants is not defined)
 const fetchRestaurants = () => {
@@ -430,7 +431,7 @@ function AIWaitress() {
               </div>
 
               {/* Meals Grid */}
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {isLoadingMeals ? (
                   Array.from({ length: 6 }).map((_, index) => (
                     <div key={index} className="bg-white rounded-lg p-3 shadow-sm animate-pulse">
@@ -441,26 +442,13 @@ function AIWaitress() {
                   ))
                 ) : (
                   discoveryMeals.map(meal => (
-                    <div key={meal.id} className="bg-white rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow">
-                      <div className="text-center mb-2">
-                        <div className="text-2xl mb-1">{meal.image}</div>
-                        <h4 className="font-semibold text-sm text-gray-900 leading-tight">{meal.name}</h4>
-                        <p className="text-xs text-gray-600">{meal.restaurant_name}</p>
-                      </div>
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-lg font-bold text-purple-600">${meal.price}</span>
-                        <div className="flex items-center text-yellow-500 text-xs">
-                          <span>⭐</span>
-                          <span className="ml-1">{meal.rating}</span>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => addToCartFromDiscovery(meal)}
-                        className="w-full bg-purple-600 text-white text-xs py-2 rounded-md hover:bg-purple-700 transition-colors"
-                      >
-                        🛒 Add to Cart
-                      </button>
-                    </div>
+                    <ActionCard
+                      key={meal.id}
+                      type="meal"
+                      data={meal}
+                      onAddToCart={addToCartFromDiscovery}
+                      className="text-sm"
+                    />
                   ))
                 )}
               </div>
@@ -515,34 +503,28 @@ function AIWaitress() {
                   {message.type && message.type !== 'text' ? (
                     <>
                       {message.type === 'restaurants' && (
-                        <div className="cards">
-                          {message.content.map(r => (
-                            <div key={r.id} className="card border border-gray-200 p-3 mb-2 rounded-lg bg-white">
-                              <h4 className="font-semibold text-gray-900">{r.name}</h4>
-                              <p className="text-sm text-gray-600">{r.cuisine} - {r.location}</p>
-                              {r.affiliateLink && (
-                                <a href={r.affiliateLink} target="_blank" rel="noopener noreferrer" className="inline-block mt-2 px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors">
-                                  Order / Visit
-                                </a>
-                              )}
-                            </div>
+                        <div className="space-y-3">
+                          {message.content.map(restaurant => (
+                            <ActionCard
+                              key={restaurant.id}
+                              type="restaurant"
+                              data={restaurant}
+                              className="bg-white"
+                            />
                           ))}
                         </div>
                       )}
 
                       {message.type === 'meals' && (
-                        <div className="cards">
-                          {message.content.map(m => (
-                            <div key={m.id} className="card border border-gray-200 p-3 mb-2 rounded-lg bg-white">
-                              <h4 className="font-semibold text-gray-900">{m.name} - ${m.price}</h4>
-                              <p className="text-sm text-gray-600">{m.description}</p>
-                              <p className="text-xs text-gray-500 mt-1">Restaurant: {m.restaurant_name}</p>
-                              {m.affiliateLink && (
-                                <a href={m.affiliateLink} target="_blank" rel="noopener noreferrer" className="inline-block mt-2 px-3 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700 transition-colors">
-                                  Order Now
-                                </a>
-                              )}
-                            </div>
+                        <div className="space-y-3">
+                          {message.content.map(meal => (
+                            <ActionCard
+                              key={meal.id}
+                              type="meal"
+                              data={meal}
+                              onAddToCart={addToCartFromDiscovery}
+                              className="bg-white"
+                            />
                           ))}
                         </div>
                       )}
