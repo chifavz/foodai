@@ -1,7 +1,7 @@
 import React from 'react';
 
 // Reusable Action Card component for restaurant and meal cards with Order, Call, Directions buttons
-function ActionCard({ type, data, onAddToCart, className = "" }) {
+function ActionCard({ type, data, onAddToCart, onRestaurantSelect, className = "" }) {
   const isRestaurant = type === 'restaurant';
   const isMeal = type === 'meal';
 
@@ -9,6 +9,16 @@ function ActionCard({ type, data, onAddToCart, className = "" }) {
   const handleOrder = () => {
     if (isMeal && onAddToCart) {
       onAddToCart(data);
+    } else if (isRestaurant && onRestaurantSelect) {
+      onRestaurantSelect(data);
+    } else if (isRestaurant) {
+      // For restaurants, navigate to menu view or use external URL
+      if (data.url) {
+        window.open(data.url, '_blank');
+      } else {
+        // Default behavior - could integrate with restaurant menu navigation
+        alert(`View menu for ${data.name} - Feature coming soon!`);
+      }
     } else if (data.orderUrl || data.affiliateLink) {
       window.open(data.orderUrl || data.affiliateLink, '_blank');
     } else {
@@ -41,9 +51,12 @@ function ActionCard({ type, data, onAddToCart, className = "" }) {
           <div className="flex items-start justify-between mb-2">
             <div>
               <h4 className="font-semibold text-gray-900 text-lg">{data.name}</h4>
-              <p className="text-sm text-gray-600">{data.cuisine}</p>
-              {data.location && (
+              <p className="text-sm text-gray-600">{data.cuisine || data.categories?.join(' • ') || data.description}</p>
+              {(data.location && typeof data.location === 'string') && (
                 <p className="text-xs text-gray-500 mt-1">📍 {data.location}</p>
+              )}
+              {(data.address && typeof data.address === 'string') && (
+                <p className="text-xs text-gray-500 mt-1">📍 {data.address}</p>
               )}
             </div>
             {data.rating && (
