@@ -242,10 +242,12 @@ function AIWaitress() {
       // Show partner restaurants
       if (userMessage.includes('show me all restaurants') || userMessage.includes('restaurants')) {
         const restaurants = await RestaurantService.getPartnerRestaurants();
-        if (restaurants.length === 0) {
+        // Ensure restaurants is always an array
+        const restaurantArray = Array.isArray(restaurants) ? restaurants : [];
+        if (restaurantArray.length === 0) {
           addMessage('ai', 'Sorry, no restaurants found.');
         } else {
-          addMessage('ai', restaurants, 'restaurants');
+          addMessage('ai', restaurantArray, 'restaurants');
         }
         setIsTyping(false);
         return;
@@ -363,10 +365,12 @@ function AIWaitress() {
       // Show meals
       if (userMessage.includes('show me meals') || userMessage.includes('menu') || userMessage.includes('food')) {
         const meals = await MealService.getMealsFiltered();
-        if (meals.length === 0) {
+        // Ensure meals is always an array
+        const mealsArray = Array.isArray(meals) ? meals : [];
+        if (mealsArray.length === 0) {
           addMessage('ai', 'I couldn\'t find any meals matching your criteria.');
         } else {
-          addMessage('ai', meals, 'meals');
+          addMessage('ai', mealsArray, 'meals');
         }
         setIsTyping(false);
         return;
@@ -571,6 +575,18 @@ function AIWaitress() {
                   {message.type && message.type !== 'text' ? (
                     <>
                       {message.type === 'restaurants' && (
+
+                        <div className="cards">
+                          {Array.isArray(message.content) && message.content.map(r => (
+                            <div key={r.id} className="card border border-gray-200 p-3 mb-2 rounded-lg bg-white">
+                              <h4 className="font-semibold text-gray-900">{r.name}</h4>
+                              <p className="text-sm text-gray-600">{r.cuisine} - {r.location}</p>
+                              {r.affiliateLink && (
+                                <a href={r.affiliateLink} target="_blank" rel="noopener noreferrer" className="inline-block mt-2 px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors">
+                                  Order / Visit
+                                </a>
+                              )}
+
                         <div className="space-y-3">
                           {message.content.map(r => (
                             <div key={r.id || r.name} className="border border-gray-200 p-4 rounded-lg bg-white shadow-sm hover:shadow-md transition-shadow">
@@ -663,6 +679,7 @@ function AIWaitress() {
                                   </a>
                                 )}
                               </div>
+
                             </div>
                           ))}
                         </div>
@@ -670,7 +687,7 @@ function AIWaitress() {
 
                       {message.type === 'meals' && (
                         <div className="cards">
-                          {message.content.map(m => (
+                          {Array.isArray(message.content) && message.content.map(m => (
                             <div key={m.id} className="card border border-gray-200 p-3 mb-2 rounded-lg bg-white">
                               <h4 className="font-semibold text-gray-900">{m.name} - ${m.price}</h4>
                               <p className="text-sm text-gray-600">{m.description}</p>
