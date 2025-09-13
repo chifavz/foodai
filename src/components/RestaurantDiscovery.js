@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useLoading } from '../contexts/LoadingContext';
 import DarkModeToggle from './DarkModeToggle';
 import LoadingSpinner from './LoadingSpinner';
+import ActionCard from './ActionCard';
 import apiService from '../services/api';
 
 function RestaurantDiscovery() {
@@ -184,50 +185,20 @@ function RestaurantDiscovery() {
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {restaurants.map((restaurant) => (
-                <div
+                <ActionCard
                   key={restaurant.id}
-                  className="bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer"
-                  onClick={() => handleRestaurantSelect(restaurant)}
-                >
-                  <div className="p-6">
-                    <div className="flex items-start justify-between mb-3">
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                        {restaurant.name}
-                      </h3>
-                      <div className="flex items-center space-x-1">
-                        <span className="text-yellow-400">⭐</span>
-                        <span className="text-sm text-gray-600 dark:text-gray-400">
-                          {restaurant.rating} ({restaurant.reviewCount})
-                        </span>
-                      </div>
-                    </div>
-                    
-                    <p className="text-gray-600 dark:text-gray-400 text-sm mb-3">
-                      {restaurant.categories?.join(' • ') || 'Restaurant'}
-                    </p>
-                    
-                    <div className="text-sm text-gray-500 dark:text-gray-500 mb-3">
-                      📍 {restaurant.location?.address1}, {restaurant.location?.city}
-                    </div>
-                    
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium text-green-600 dark:text-green-400">
-                        {restaurant.price || 'Price not available'}
-                      </span>
-                      <span className={`text-xs px-2 py-1 rounded-full ${
-                        restaurant.isOpenNow 
-                          ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'
-                          : 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100'
-                      }`}>
-                        {restaurant.isOpenNow ? 'Open Now' : 'Closed'}
-                      </span>
-                    </div>
-                    
-                    <button className="mt-4 w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition-colors">
-                      View Menu & Order
-                    </button>
-                  </div>
-                </div>
+                  type="restaurant"
+                  data={{
+                    ...restaurant,
+                    address: restaurant.location?.address1 && restaurant.location?.city 
+                      ? `${restaurant.location.address1}, ${restaurant.location.city}`
+                      : restaurant.location?.address1 || restaurant.location?.city || 'Address not available',
+                    phone: restaurant.phone,
+                    description: restaurant.categories?.join(' • ') || 'Restaurant'
+                  }}
+                  onRestaurantSelect={handleRestaurantSelect}
+                  className="cursor-pointer hover:shadow-lg transition-shadow"
+                />
               ))}
             </div>
           </div>
