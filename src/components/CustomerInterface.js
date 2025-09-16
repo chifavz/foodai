@@ -2,15 +2,30 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useLoading } from '../contexts/LoadingContext';
 import DarkModeToggle from './DarkModeToggle';
-import { MenuItemSkeleton } from './SkeletonLoader';
 import MealPreferencesFilter from './MealPreferencesFilter';
+import CartSummary from './CartSummary';
+import MenuList from './MenuList';
+import ItemDetailsModal from './ItemDetailsModal';
+import SearchAndFilters from './SearchAndFilters';
+import useCart from '../hooks/useCart';
 import apiService from '../services/api';
 
 function CustomerInterface() {
   const navigate = useNavigate();
   const location = useLocation();
   const { startLoading, stopLoading, setLoadingError } = useLoading();
-  const [cart, setCart] = useState([]);
+  
+  // Use the custom cart hook
+  const { 
+    cart, 
+    loading: cartLoading, 
+    error: cartError,
+    addToCart, 
+    updateQuantity, 
+    getTotalPrice,
+    totalItems 
+  } = useCart();
+  
   const [menuItems, setMenuItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedItem, setSelectedItem] = useState(null);
@@ -50,7 +65,6 @@ function CustomerInterface() {
       setCurrentRestaurant(restaurantData || null);
       
       try {
-
         let items = [];
         
         // If we have restaurant-specific menu data, use it
@@ -75,11 +89,7 @@ function CustomerInterface() {
           items = await apiService.getMenuItems();
         }
         
-        // Load cart data
-        const savedCart = await apiService.getCart();
-        
         setMenuItems(items);
-        setCart(savedCart);
         stopLoading();
       } catch (error) {
         setLoadingError('Failed to load data');
@@ -89,7 +99,7 @@ function CustomerInterface() {
     };
 
     loadData();
-  }, [location.state, setLoadingError, startLoading, stopLoading]); // Add missing dependencies
+  }, [location.state, setLoadingError, startLoading, stopLoading]);
 
   // Handle preference changes
   const handlePreferencesChange = (newPreferences) => {
@@ -97,77 +107,11 @@ function CustomerInterface() {
     loadMealsWithPreferences(newPreferences);
   };
 
-  // Save cart whenever it changes
-  useEffect(() => {
-    if (cart.length > 0) {
-      apiService.saveCart(cart);
-    }
-  }, [cart]);
+  // Save cart whenever it changes - removed since useCart handles this
 
-  const addToCart = (item) => {
-    const existingItem = cart.find(cartItem => cartItem.id === item.id);
-    if (existingItem) {
-      setCart(cart.map(cartItem => 
-        cartItem.id === item.id 
-          ? { ...cartItem, quantity: cartItem.quantity + 1 }
-          : cartItem
-      ));
-    } else {
-      setCart([...cart, { ...item, quantity: 1 }]);
-    }
-  };
+  // Remove the cart manipulation functions since they're now in useCart hook
 
-  const removeFromCart = (id) => {
-    setCart(cart.filter(item => item.id !== id));
-  };
-
-  const updateQuantity = (id, newQuantity) => {
-    if (newQuantity === 0) {
-      removeFromCart(id);
-    } else {
-      setCart(cart.map(item => 
-        item.id === id ? { ...item, quantity: newQuantity } : item
-      ));
-    }
-  };
-
-  const getTotalPrice = () => {
-    return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
-  };
-
-  // Enhanced filtering logic with immediate frontend responses
-  const filteredItems = menuItems.filter(item => {
-    const searchMatch = !searchTerm || 
-                       item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                       item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                       item.chef.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                       item.restaurant_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                       item.cuisine?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                       item.category?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    // Special handling for "Similar to" searches
-    if (searchTerm.startsWith('Similar to ')) {
-      const itemName = searchTerm.replace('Similar to ', '');
-      const referenceItem = menuItems.find(menuItem => 
-        menuItem.name.toLowerCase().includes(itemName.toLowerCase())
-      );
-      
-      if (referenceItem) {
-        return item.id !== referenceItem.id && (
-          item.cuisine === referenceItem.cuisine ||
-          item.category === referenceItem.category ||
-          item.chef === referenceItem.chef ||
-          item.diet === referenceItem.diet
-        );
-      }
-    }
-    
-    return searchMatch;
-  });
-
-  const closeModal = () => {
-    setSelectedItem(null);
-  };
+  // Remove the large filtering logic since it's now in MenuList component with useMemo
 
   // Quick Action Handlers - Frontend immediate responses
   const handleShowSimilar = (item) => {
@@ -190,7 +134,7 @@ function CustomerInterface() {
       alert(`No similar items found to ${item.name}. Try browsing our ${item.cuisine} cuisine or ${item.category} category!`);
       setSearchTerm('');
     } else {
-      // Temporarily filter items to show only similar ones
+      // Auto-clear after showing results
       setTimeout(() => {
         setSearchTerm(''); // Clear after showing results
       }, 5000); // Auto-clear after 5 seconds
@@ -216,102 +160,6 @@ function CustomerInterface() {
     setMealPreferences({});
     setSearchTerm('');
     loadMealsWithPreferences({});
-  };
-
-  const ItemDetailsModal = ({ item, onClose }) => {
-    if (!item) return null;
-
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div className="bg-white dark:bg-gray-800 rounded-lg max-w-md w-full max-h-screen overflow-y-auto border border-gray-200 dark:border-gray-700">
-          <div className="p-6">
-            <div className="flex justify-between items-start mb-4">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white">{item.name}</h3>
-              <button
-                onClick={onClose}
-                className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-xl"
-              >
-                ×
-              </button>
-            </div>
-            
-            <div className="text-6xl text-center mb-4">{item.image}</div>
-            
-            <p className="text-gray-600 dark:text-gray-400 mb-4">{item.description}</p>
-            
-            <div className="space-y-3 mb-6">
-              {item.restaurant_name && (
-                <div className="flex justify-between">
-                  <span className="text-gray-500 dark:text-gray-400">Restaurant</span>
-                  <span className="font-medium text-gray-900 dark:text-white">{item.restaurant_name}</span>
-                </div>
-              )}
-              <div className="flex justify-between">
-                <span className="text-gray-500 dark:text-gray-400">Chef</span>
-                <span className="font-medium text-gray-900 dark:text-white">{item.chef}</span>
-              </div>
-              {item.cuisine && (
-                <div className="flex justify-between">
-                  <span className="text-gray-500 dark:text-gray-400">Cuisine</span>
-                  <span className="font-medium text-gray-900 dark:text-white">{item.cuisine}</span>
-                </div>
-              )}
-              {item.diet && (
-                <div className="flex justify-between">
-                  <span className="text-gray-500 dark:text-gray-400">Diet</span>
-                  <span className="font-medium text-gray-900 dark:text-white capitalize">{item.diet}</span>
-                </div>
-              )}
-              <div className="flex justify-between">
-                <span className="text-gray-500 dark:text-gray-400">Rating</span>
-                <div className="flex items-center">
-                  <span className="text-yellow-400">⭐</span>
-                  <span className="ml-1 text-gray-900 dark:text-white">{item.rating}</span>
-                </div>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500 dark:text-gray-400">Category</span>
-                <span className="font-medium text-gray-900 dark:text-white">{item.category}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500 dark:text-gray-400">Price</span>
-                <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">${item.price}</span>
-              </div>
-              
-              {item.allergens && item.allergens.length > 0 && (
-                <div className="flex justify-between">
-                  <span className="text-gray-500 dark:text-gray-400">Allergens</span>
-                  <div className="flex flex-wrap gap-1">
-                    {item.allergens.map(allergen => (
-                      <span key={allergen} className="bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 px-2 py-1 rounded-full text-xs">
-                        {allergen}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg mb-4">
-              <h4 className="font-semibold text-blue-900 dark:text-blue-200 mb-2">🤖 AI Match Score</h4>
-              <p className="text-blue-800 dark:text-blue-300 text-sm">
-                This meal matches your preferences and dietary requirements. Our AI recommends it based on your profile and past selections.
-              </p>
-            </div>
-            
-            <button
-              onClick={() => {
-                addToCart(item);
-                onClose();
-              }}
-              className="w-full bg-blue-600 dark:bg-blue-700 text-white py-3 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors font-semibold"
-            >
-              Add to Cart - ${item.price}
-            </button>
-          </div>
-        </div>
-      </div>
-    );
   };
 
   return (
@@ -390,7 +238,7 @@ function CustomerInterface() {
               </button>
               <div className="relative">
                 <button className="bg-blue-600 dark:bg-blue-700 text-white px-4 py-2 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors">
-                  🛒 Cart ({cart.length})
+                  🛒 Cart ({totalItems})
                 </button>
               </div>
             </div>
@@ -410,251 +258,47 @@ function CustomerInterface() {
               />
             )}
 
-            {/* Search Bar */}
-            <div className="mb-6">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search within matched meals..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
-                />
-                <div className="absolute left-3 top-3 text-gray-400 dark:text-gray-500">
-                  🔍
-                </div>
-                {searchTerm && (
-                  <button
-                    onClick={() => setSearchTerm('')}
-                    className="absolute right-3 top-3 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
-                  >
-                    ×
-                  </button>
-                )}
-              </div>
+            {/* Search Bar and Filters */}
+            <SearchAndFilters
+              searchTerm={searchTerm}
+              onSearchChange={setSearchTerm}
+              mealPreferences={mealPreferences}
+              onFilterByCuisine={handleFilterByCuisine}
+              onClearFilters={handleClearFilters}
+            />
 
-              {/* Quick Cuisine Filter Buttons */}
-              <div className="mt-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Quick Filters:</span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {['All', 'Italian', 'French', 'Japanese', 'Vegetarian'].map(cuisine => (
-                    <button
-                      key={cuisine}
-                      onClick={() => cuisine === 'All' ? handleClearFilters() : handleFilterByCuisine(cuisine)}
-                      className={`px-3 py-1 rounded-full text-sm transition-colors ${
-                        (cuisine === 'All' && !mealPreferences.cuisine) || mealPreferences.cuisine === cuisine
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                      }`}
-                    >
-                      {cuisine === 'All' ? '🍽️ All' : 
-                       cuisine === 'Italian' ? '🍝 Italian' :
-                       cuisine === 'French' ? '🥖 French' :
-                       cuisine === 'Japanese' ? '🍣 Japanese' :
-                       '🥗 Vegetarian'}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
+            {/* Menu Items List */}
+            <MenuList
+              menuItems={menuItems}
+              searchTerm={searchTerm}
+              isLoading={isLoadingMenu}
+              onItemSelect={setSelectedItem}
+              onAddToCart={addToCart}
+              onShowSimilar={handleShowSimilar}
+              onFilterByCuisine={handleFilterByCuisine}
+            />
 
-            {/* Results Count */}
-            <div className="mb-4">
-              <div className="flex justify-between items-center">
-                <p className="text-gray-600 dark:text-gray-400">
-                  🤖 AI found {filteredItems.length} {filteredItems.length === 1 ? 'meal' : 'meals'} matching your preferences
-                  {searchTerm && ` (filtered by "${searchTerm}")`}
-                </p>
-                {filteredItems.length > 0 && (
-                  <p className="text-sm text-blue-600 dark:text-blue-400">
-                    From {new Set(filteredItems.map(item => item.restaurant_name)).size} partner restaurants
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Menu Items Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-              {isLoadingMenu ? (
-                Array.from({ length: 6 }).map((_, index) => (
-                  <MenuItemSkeleton key={index} />
-                ))
-              ) : (
-                filteredItems.map(item => (
-                  <div key={item.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden border border-gray-200 dark:border-gray-700">
-                    <div className="p-6">
-                      <div className="text-4xl text-center mb-4">{item.image}</div>
-                      <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-2">{item.name}</h3>
-                      <p className="text-gray-600 dark:text-gray-400 text-sm mb-3 line-clamp-2">{item.description}</p>
-                      
-                      {/* Restaurant info */}
-                      {item.restaurant_name && (
-                        <div className="bg-blue-50 dark:bg-blue-900/30 p-2 rounded-lg mb-3">
-                          <div className="flex items-center text-sm">
-                            <span className="text-blue-600 dark:text-blue-400">🏪</span>
-                            <span className="text-blue-800 dark:text-blue-200 ml-1 font-medium">{item.restaurant_name}</span>
-                          </div>
-                          {item.cuisine && (
-                            <div className="flex items-center text-xs text-blue-700 dark:text-blue-300 mt-1">
-                              <span>🍽️ {item.cuisine} • {item.diet}</span>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                      
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-gray-500 dark:text-gray-400 text-sm">by {item.chef}</span>
-                        <div className="flex items-center">
-                          <span className="text-yellow-400">⭐</span>
-                          <span className="text-gray-600 dark:text-gray-400 text-sm ml-1">{item.rating}</span>
-                        </div>
-                      </div>
-                      
-                      {/* Allergen info */}
-                      {item.allergens && item.allergens.length > 0 && (
-                        <div className="flex justify-between mb-3">
-                          <span className="text-gray-500 dark:text-gray-400 text-xs">Contains:</span>
-                          <div className="flex flex-wrap gap-1">
-                            {item.allergens.map(allergen => (
-                              <span key={allergen} className="bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 px-2 py-1 rounded-full text-xs">
-                                {allergen}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">${item.price}</span>
-                        <button
-                          onClick={() => setSelectedItem(item)}
-                          className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm font-medium"
-                        >
-                          View Details
-                        </button>
-                      </div>
-                      
-                      {/* Quick Action Buttons */}
-                      <div className="flex gap-2 mb-3">
-                        <button
-                          onClick={() => handleShowSimilar(item)}
-                          className="flex-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 py-2 px-3 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-sm"
-                        >
-                          🔍 Show Similar
-                        </button>
-                        <button
-                          onClick={() => handleFilterByCuisine(item.cuisine)}
-                          className="flex-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 py-2 px-3 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-sm"
-                        >
-                          🍽️ {item.cuisine}
-                        </button>
-                      </div>
-                      
-                      <button
-                        onClick={() => addToCart(item)}
-                        className="w-full bg-blue-600 dark:bg-blue-700 text-white py-2 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
-                      >
-                        🛒 Add to Order
-                      </button>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-
-            {/* No Results */}
-            {filteredItems.length === 0 && !isLoadingMenu && (
-              <div className="text-center py-12">
-                <div className="text-6xl mb-4">🔍</div>
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No meals found</h3>
-                <p className="text-gray-600 dark:text-gray-400 mb-4">
-                  Try adjusting your preferences or search terms
-                </p>
-                <button
-                  onClick={() => {
-                    setSearchTerm('');
-                    setMealPreferences({});
-                    loadMealsWithPreferences({});
-                  }}
-                  className="text-blue-600 hover:text-blue-700 font-medium"
-                >
-                  Clear all filters
-                </button>
-              </div>
-            )}
+            {/* No Results Message is now handled in MenuList */}
           </div>
 
           {/* Cart Sidebar */}
-          <div className="lg:w-80">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 sticky top-8 border border-gray-200 dark:border-gray-700">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">🤖 Your AI Selection</h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                We'll connect you with the restaurants for ordering
-              </p>
-              
-              {cart.length === 0 ? (
-                <p className="text-gray-500 dark:text-gray-400 text-center py-8">Your selection is empty</p>
-              ) : (
-                <>
-                  <div className="space-y-4 mb-6">
-                    {cart.map(item => (
-                      <div key={item.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                        <div className="flex-1">
-                          <h4 className="font-medium text-gray-900 dark:text-white">{item.name}</h4>
-                          <p className="text-gray-500 dark:text-gray-400 text-sm">${item.price} each</p>
-                          {item.restaurant_name && (
-                            <p className="text-blue-600 dark:text-blue-400 text-xs">📍 {item.restaurant_name}</p>
-                          )}
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <button
-                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                            className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-                          >
-                            -
-                          </button>
-                          <span className="w-8 text-center text-gray-900 dark:text-white">{item.quantity}</span>
-                          <button
-                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                            className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-                          >
-                            +
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  
-                  <div className="border-t dark:border-gray-600 pt-4">
-                    <div className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg mb-4">
-                      <p className="text-sm text-blue-800 dark:text-blue-200">
-                        🎯 <strong>AI Referral Service:</strong> We'll connect you with each restaurant to place your order directly. No delivery fees from us!
-                      </p>
-                    </div>
-                    <div className="flex justify-between items-center mb-4">
-                      <span className="text-lg font-bold text-gray-900 dark:text-white">Estimated Total: ${getTotalPrice()}</span>
-                    </div>
-                    <button 
-                      onClick={() => {
-                        // Navigate to restaurant referral page
-                        navigate('/checkout', { state: { cart } });
-                      }}
-                      className="w-full bg-green-600 dark:bg-green-700 text-white py-3 rounded-lg hover:bg-green-700 dark:hover:bg-green-600 transition-colors font-semibold"
-                    >
-                      🏪 Connect with Restaurants
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
+          <CartSummary
+            cart={cart}
+            updateQuantity={updateQuantity}
+            getTotalPrice={getTotalPrice}
+            totalItems={totalItems}
+            loading={cartLoading}
+            error={cartError}
+          />
         </div>
       </div>
 
       {/* Item Details Modal */}
-      <ItemDetailsModal item={selectedItem} onClose={closeModal} />
+      <ItemDetailsModal 
+        item={selectedItem} 
+        onClose={() => setSelectedItem(null)} 
+        onAddToCart={addToCart}
+      />
     </div>
   );
 }
