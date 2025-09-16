@@ -563,28 +563,6 @@ function AIWaitress() {
                   {message.type && message.type !== 'text' ? (
                     <>
                       {message.type === 'restaurants' && (
-
-                        <div className="space-y-3">
-                          {message.content.map(restaurant => (
-                            <ActionCard
-                              key={restaurant.id}
-                              type="restaurant"
-                              data={restaurant}
-                              className="bg-white"
-                            />
-
-
-                        <div className="cards">
-                          {Array.isArray(message.content) && message.content.map(r => (
-                            <div key={r.id} className="card border border-gray-200 p-3 mb-2 rounded-lg bg-white">
-                              <h4 className="font-semibold text-gray-900">{r.name}</h4>
-                              <p className="text-sm text-gray-600">{r.cuisine} - {r.location}</p>
-                              {r.affiliateLink && (
-                                <a href={r.affiliateLink} target="_blank" rel="noopener noreferrer" className="inline-block mt-2 px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors">
-                                  Order / Visit
-                                </a>
-                              )}
-
                         <div className="space-y-3">
                           {message.content.map(r => (
                             <div key={r.id || r.name} className="border border-gray-200 p-4 rounded-lg bg-white shadow-sm hover:shadow-md transition-shadow">
@@ -685,19 +663,8 @@ function AIWaitress() {
                       )}
 
                       {message.type === 'meals' && (
-
                         <div className="space-y-3">
-                          {message.content.map(meal => (
-                            <ActionCard
-                              key={meal.id}
-                              type="meal"
-                              data={meal}
-                              onAddToCart={addToCartFromDiscovery}
-                              className="bg-white"
-                            />
-
-                        <div className="cards">
-                          {Array.isArray(message.content) && message.content.map(m => (
+                          {message.content.map(m => (
                             <div key={m.id} className="card border border-gray-200 p-3 mb-2 rounded-lg bg-white">
                               <h4 className="font-semibold text-gray-900">{m.name} - ${m.price}</h4>
                               <p className="text-sm text-gray-600">{m.description}</p>
@@ -708,7 +675,6 @@ function AIWaitress() {
                                 </a>
                               )}
                             </div>
-
                           ))}
                         </div>
                       )}
