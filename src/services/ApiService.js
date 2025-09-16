@@ -9,8 +9,12 @@ function getSessionId() {
 
 class ApiService {
   constructor(baseUrl = process.env.REACT_APP_API_BASE_URL) {
+
     // Use .env override or default to port 5000 since that's where your backend responds
     this.baseUrl = baseUrl || "http://localhost:5000/api";
+
+    this.baseUrl = baseUrl || 'http://localhost:5000/api';
+
   }
 
   async request(endpoint, options = {}) {
