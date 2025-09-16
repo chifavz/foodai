@@ -39,13 +39,32 @@ class ApiService {
     }
   }
 
+  // Generate and persist session ID for guest users
+  getSessionId() {
+    let sessionId = localStorage.getItem("sessionId");
+    if (!sessionId) {
+      sessionId = crypto.randomUUID();
+      localStorage.setItem("sessionId", sessionId);
+    }
+    return sessionId;
+  }
+
   async request(endpoint, options = {}) {
     const url = `${this.baseUrl}${endpoint}`;
+    
+    // Get JWT token if user is logged in
+    const token = localStorage.getItem("token");
+    
+    // Build headers with authentication
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      'X-Session-Id': this.getSessionId(),
+      ...options.headers,
+    };
+
     const config = {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
+      headers,
       ...options,
     };
 
@@ -55,6 +74,7 @@ class ApiService {
 
     try {
       console.log('Making API request to:', url);
+      console.log('Request headers:', { ...headers, Authorization: headers.Authorization ? '[REDACTED]' : undefined });
       const response = await fetch(url, config);
       
       if (!response.ok) {

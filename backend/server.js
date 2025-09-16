@@ -591,21 +591,48 @@ app.post('/api/user/profile', (req, res) => {
   res.json(profile);
 });
 
-// Cart endpoints
+// Cart endpoints with authentication support
 app.get('/api/cart', (req, res) => {
+  const userId = req.user?.id; // Would be set by JWT middleware in real implementation
+  const sessionId = req.headers['x-session-id'];
+
+  console.log('Cart GET request - userId:', userId, 'sessionId:', sessionId);
+
+  if (!userId && !sessionId) {
+    return res.status(400).json({ message: "Either user authentication or session ID required" });
+  }
+
   // For now, return empty cart - frontend will use localStorage fallback
-  // In a real implementation, this would fetch from database/session with user authentication
+  // In a real implementation, this would fetch from database/session with user/session identification
   res.json({ cart: [] });
 });
 
 app.post('/api/cart', (req, res) => {
-  // For now, just return the posted cart
-  // In a real implementation, this would save to database/session with user authentication
+  const userId = req.user?.id; // Would be set by JWT middleware in real implementation  
+  const sessionId = req.headers['x-session-id'];
   const { cart } = req.body;
+
+  console.log('Cart POST request - userId:', userId, 'sessionId:', sessionId, 'cart items:', cart?.length || 0);
+
+  if (!userId && !sessionId) {
+    return res.status(400).json({ message: "Either user authentication or session ID required" });
+  }
+
+  // For now, just return the posted cart
+  // In a real implementation, this would save to database/session with user/session identification
   res.json({ cart: cart || [] });
 });
 
 app.delete('/api/cart', (req, res) => {
+  const userId = req.user?.id; // Would be set by JWT middleware in real implementation
+  const sessionId = req.headers['x-session-id'];
+
+  console.log('Cart DELETE request - userId:', userId, 'sessionId:', sessionId);
+
+  if (!userId && !sessionId) {
+    return res.status(400).json({ message: "Either user authentication or session ID required" });
+  }
+
   // For now, just return success
   // In a real implementation, this would clear the cart in database/session
   res.json({ success: true, cart: [] });
