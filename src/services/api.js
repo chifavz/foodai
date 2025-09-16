@@ -477,16 +477,29 @@ class ApiService {
     if (!this.isBackendAvailable) {
       // Fallback to localStorage
       const savedCart = localStorage.getItem('currentCart');
-      return savedCart ? JSON.parse(savedCart) : [];
+      try {
+        const parsed = savedCart ? JSON.parse(savedCart) : [];
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (error) {
+        console.error('Failed to parse saved cart:', error);
+        return [];
+      }
     }
 
     try {
       const result = await this.request('/cart');
-      return result.cart || [];
+      const cart = result.cart || [];
+      return Array.isArray(cart) ? cart : [];
     } catch (error) {
       // Fallback to localStorage on error
       const savedCart = localStorage.getItem('currentCart');
-      return savedCart ? JSON.parse(savedCart) : [];
+      try {
+        const parsed = savedCart ? JSON.parse(savedCart) : [];
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (parseError) {
+        console.error('Failed to parse saved cart on fallback:', parseError);
+        return [];
+      }
     }
   }
 

@@ -13,10 +13,12 @@ function useCart() {
       setError(null);
       try {
         const savedCart = await apiService.getCart();
-        setCart(savedCart);
+        // Ensure savedCart is always an array
+        setCart(Array.isArray(savedCart) ? savedCart : []);
       } catch (err) {
         setError('Failed to load cart');
         console.error('Failed to load cart:', err);
+        setCart([]); // Ensure cart is always an array even on error
       } finally {
         setLoading(false);
       }
@@ -27,7 +29,7 @@ function useCart() {
 
   // Save cart whenever it changes
   useEffect(() => {
-    if (!loading && cart.length > 0) {
+    if (!loading && Array.isArray(cart) && cart.length > 0) {
       apiService.saveCart(cart).catch(err => {
         console.error('Failed to save cart:', err);
       });
@@ -35,33 +37,43 @@ function useCart() {
   }, [cart, loading]);
 
   const addToCart = (item) => {
-    const existingItem = cart.find(cartItem => cartItem.id === item.id);
+    // Ensure cart is an array before manipulating
+    const currentCart = Array.isArray(cart) ? cart : [];
+    const existingItem = currentCart.find(cartItem => cartItem.id === item.id);
     if (existingItem) {
-      setCart(cart.map(cartItem => 
+      setCart(currentCart.map(cartItem => 
         cartItem.id === item.id 
           ? { ...cartItem, quantity: cartItem.quantity + 1 }
           : cartItem
       ));
     } else {
-      setCart([...cart, { ...item, quantity: 1 }]);
+      setCart([...currentCart, { ...item, quantity: 1 }]);
     }
   };
 
   const removeFromCart = (id) => {
-    setCart(cart.filter(item => item.id !== id));
+    // Ensure cart is an array before filtering
+    const currentCart = Array.isArray(cart) ? cart : [];
+    setCart(currentCart.filter(item => item.id !== id));
   };
 
   const updateQuantity = (id, newQuantity) => {
     if (newQuantity === 0) {
       removeFromCart(id);
     } else {
-      setCart(cart.map(item => 
+      // Ensure cart is an array before mapping
+      const currentCart = Array.isArray(cart) ? cart : [];
+      setCart(currentCart.map(item => 
         item.id === id ? { ...item, quantity: newQuantity } : item
       ));
     }
   };
 
   const getTotalPrice = () => {
+    // Ensure cart is an array before using reduce
+    if (!Array.isArray(cart)) {
+      return 0;
+    }
     return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
   };
 
@@ -85,8 +97,8 @@ function useCart() {
     updateQuantity,
     getTotalPrice,
     clearCart,
-    itemCount: cart.length,
-    totalItems: cart.reduce((total, item) => total + item.quantity, 0)
+    itemCount: Array.isArray(cart) ? cart.length : 0,
+    totalItems: Array.isArray(cart) ? cart.reduce((total, item) => total + item.quantity, 0) : 0
   };
 }
 

@@ -46,8 +46,13 @@ describe('useCart hook', () => {
     
     const testItem = { id: 1, name: 'Test Item', price: 10 };
     
+    // Add item first
     act(() => {
       result.current.addToCart(testItem);
+    });
+    
+    // Add same item again in separate act
+    act(() => {
       result.current.addToCart(testItem);
     });
     
@@ -61,8 +66,13 @@ describe('useCart hook', () => {
     
     const testItem = { id: 1, name: 'Test Item', price: 10 };
     
+    // Add item first
     act(() => {
       result.current.addToCart(testItem);
+    });
+    
+    // Remove item in separate act
+    act(() => {
       result.current.removeFromCart(1);
     });
     
@@ -77,8 +87,12 @@ describe('useCart hook', () => {
     const item1 = { id: 1, name: 'Item 1', price: 10 };
     const item2 = { id: 2, name: 'Item 2', price: 15 };
     
+    // Add items one by one
     act(() => {
       result.current.addToCart(item1);
+    });
+    
+    act(() => {
       result.current.addToCart(item2);
     });
     
@@ -92,8 +106,13 @@ describe('useCart hook', () => {
     
     const testItem = { id: 1, name: 'Test Item', price: 10 };
     
+    // Add item first
     act(() => {
       result.current.addToCart(testItem);
+    });
+    
+    // Update quantity in separate act
+    act(() => {
       result.current.updateQuantity(1, 3);
     });
     
@@ -107,8 +126,13 @@ describe('useCart hook', () => {
     
     const testItem = { id: 1, name: 'Test Item', price: 10 };
     
+    // Add item first
     act(() => {
       result.current.addToCart(testItem);
+    });
+    
+    // Set quantity to 0 in separate act
+    act(() => {
       result.current.updateQuantity(1, 0);
     });
     
