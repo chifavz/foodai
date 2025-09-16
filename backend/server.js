@@ -31,7 +31,12 @@ pool.connect()
   });
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || "http://localhost:3000", // Allow frontend origin
+  credentials: true, // Allow credentials (cookies, auth headers)
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Session-Id']
+}));
 app.use(express.json());
 
 // Sample restaurant and menu data - in production this would be a database
