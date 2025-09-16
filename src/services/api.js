@@ -5,7 +5,7 @@ import menuApiService from './menuApiService';
 
 class ApiService {
   constructor() {
-    this.baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api';
+    this.baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000/api';
     this.backendUrl = process.env.REACT_APP_BACKEND_URL || 'https://api.aifoodback.example.com';
     this.isBackendAvailable = undefined; // Will be set by checkBackendConnection
     this.yelpService = yelpService;

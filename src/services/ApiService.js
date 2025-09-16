@@ -9,22 +9,16 @@ function getSessionId() {
 
 class ApiService {
   constructor(baseUrl = process.env.REACT_APP_API_BASE_URL) {
-
-    this.baseUrl = baseUrl || 'http://localhost:8000/api';
-
-
-    // Use .env override or default to port 5000 since that's where your backend responds
-    this.baseUrl = baseUrl || "http://localhost:5000/api";
-
-    this.baseUrl = baseUrl || 'http://localhost:5000/api';
-
-
+    // Ensure no trailing slash in base URL
+    this.baseUrl = (baseUrl || "http://localhost:8000/api").replace(/\/+$/, "");
   }
 
   async request(endpoint, options = {}) {
-    const url = `${this.baseUrl}${endpoint}`;
+    // Ensure no leading slash in endpoint
+    const cleanEndpoint = endpoint.replace(/^\/+/, "");
+    const url = `${this.baseUrl}/${cleanEndpoint}`;
 
-    // Attach headers with token or sessionId
+    // Attach token or sessionId
     const token = localStorage.getItem("token");
     const headers = {
       "Content-Type": "application/json",
