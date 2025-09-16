@@ -21,18 +21,19 @@ class ApiService {
 
   async checkBackendConnection() {
     try {
-      // Create a timeout for the fetch request
+      // Use the centralized request method to ensure headers are included
+      // Create a timeout for the request
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
       
-      const response = await fetch(`${this.baseUrl}/health`, { 
+      await this.request('/health', { 
         method: 'GET',
         signal: controller.signal
       });
       
       clearTimeout(timeoutId);
-      this.isBackendAvailable = response.ok;
-      console.log('Backend connection check:', response.ok ? 'Connected' : 'Failed');
+      this.isBackendAvailable = true;
+      console.log('Backend connection check: Connected');
     } catch (error) {
       console.log('Backend not available, using localStorage fallback:', error.message);
       this.isBackendAvailable = false;
