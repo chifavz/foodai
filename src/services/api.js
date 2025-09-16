@@ -7,22 +7,34 @@ class ApiService {
   constructor() {
     this.baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000/api';
     this.backendUrl = process.env.REACT_APP_BACKEND_URL || 'https://api.aifoodback.example.com';
-    this.isBackendAvailable = false;
+    this.isBackendAvailable = undefined; // Will be set by checkBackendConnection
     this.yelpService = yelpService;
     this.googlePlacesService = googlePlacesService;
     this.menuApiService = menuApiService;
-    this.checkBackendConnection();
+    
+    // Start backend connection check (async, won't block constructor)
+    this.checkBackendConnection().catch(error => {
+      console.error('Initial backend connection check failed:', error);
+      this.isBackendAvailable = false;
+    });
   }
 
   async checkBackendConnection() {
     try {
+      // Create a timeout for the fetch request
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      
       const response = await fetch(`${this.baseUrl}/health`, { 
         method: 'GET',
-        timeout: 5000
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
       this.isBackendAvailable = response.ok;
+      console.log('Backend connection check:', response.ok ? 'Connected' : 'Failed');
     } catch (error) {
-      console.log('Backend not available, using localStorage fallback');
+      console.log('Backend not available, using localStorage fallback:', error.message);
       this.isBackendAvailable = false;
     }
   }
@@ -42,12 +54,15 @@ class ApiService {
     }
 
     try {
+      console.log('Making API request to:', url);
       const response = await fetch(url, config);
       
       if (!response.ok) {
+        console.error(`API request failed - Status: ${response.status}, URL: ${url}`);
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
+      console.log('API request successful:', url);
       return await response.json();
     } catch (error) {
       console.error('API request failed:', error);
@@ -57,14 +72,22 @@ class ApiService {
 
   // User Profile API
   async getUserProfile() {
+    // Ensure backend availability is checked before making requests
+    if (this.isBackendAvailable === undefined) {
+      await this.checkBackendConnection();
+    }
+    
     if (!this.isBackendAvailable) {
       // Fallback to localStorage
+      console.log('Using localStorage fallback for user profile');
       return JSON.parse(localStorage.getItem('userProfile') || '{}');
     }
     
     try {
+      console.log('Fetching user profile from backend:', `${this.baseUrl}/user/profile`);
       return await this.request('/user/profile');
     } catch (error) {
+      console.log('Backend request failed, falling back to localStorage:', error.message);
       // Fallback to localStorage on error
       return JSON.parse(localStorage.getItem('userProfile') || '{}');
     }
