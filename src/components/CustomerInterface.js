@@ -51,9 +51,19 @@ function CustomerInterface() {
     }
   };
 
+  // Handle navigation state changes separately
+  useEffect(() => {
+    const restaurantData = location.state?.restaurant;
+    const isFromDiscovery = location.state?.fromDiscovery;
+    
+    setFromDiscovery(isFromDiscovery || false);
+    setCurrentRestaurant(restaurantData || null);
+  }, [location.state]);
+
   // Load initial data on component mount
   useEffect(() => {
     const loadData = async () => {
+      setIsLoadingMenu(true);
       startLoading();
       
       // Check if we're coming from restaurant discovery
@@ -89,9 +99,11 @@ function CustomerInterface() {
           items = await apiService.getMenuItems();
         }
         
+        console.log("Meals data:", items);
         setMenuItems(items);
         stopLoading();
       } catch (error) {
+        console.error('Failed to load data:', error);
         setLoadingError('Failed to load data');
       } finally {
         setIsLoadingMenu(false);
@@ -99,7 +111,7 @@ function CustomerInterface() {
     };
 
     loadData();
-  }, [location.state, setLoadingError, startLoading, stopLoading]);
+  }, []); // 👈 empty deps = runs only once
 
   // Handle preference changes
   const handlePreferencesChange = (newPreferences) => {

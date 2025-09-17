@@ -13,6 +13,8 @@ function useCart() {
       setError(null);
       try {
         const savedCart = await apiService.getCart();
+        console.log("Cart data:", savedCart);
+        
         // Ensure savedCart is always an array
         setCart(Array.isArray(savedCart) ? savedCart : []);
       } catch (err) {
