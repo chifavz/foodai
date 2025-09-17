@@ -12,6 +12,10 @@ class ApiService {
     this.googlePlacesService = googlePlacesService;
     this.menuApiService = menuApiService;
     
+    // Logging configuration - reduce verbose logs in production
+    this.enableVerboseLogging = process.env.NODE_ENV === 'development' && 
+                                process.env.REACT_APP_VERBOSE_API_LOGS !== 'false';
+    
     // Start backend connection check (async, won't block constructor)
     this.checkBackendConnection().catch(error => {
       console.error('Initial backend connection check failed:', error);
@@ -33,9 +37,13 @@ class ApiService {
       
       clearTimeout(timeoutId);
       this.isBackendAvailable = true;
-      console.log('Backend connection check: Connected');
+      if (this.enableVerboseLogging) {
+        console.log('Backend connection check: Connected');
+      }
     } catch (error) {
-      console.log('Backend not available, using localStorage fallback:', error.message);
+      if (this.enableVerboseLogging) {
+        console.log('Backend not available, using localStorage fallback:', error.message);
+      }
       this.isBackendAvailable = false;
     }
   }
@@ -74,8 +82,10 @@ class ApiService {
     }
 
     try {
-      console.log('Making API request to:', url);
-      console.log('Request headers:', { ...headers, Authorization: headers.Authorization ? '[REDACTED]' : undefined });
+      if (this.enableVerboseLogging) {
+        console.log('Making API request to:', url);
+        console.log('Request headers:', { ...headers, Authorization: headers.Authorization ? '[REDACTED]' : undefined });
+      }
       const response = await fetch(url, config);
       
       if (!response.ok) {
@@ -83,7 +93,9 @@ class ApiService {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
-      console.log('API request successful:', url);
+      if (this.enableVerboseLogging) {
+        console.log('API request successful:', url);
+      }
       return await response.json();
     } catch (error) {
       console.error('API request failed:', error);
@@ -100,15 +112,21 @@ class ApiService {
     
     if (!this.isBackendAvailable) {
       // Fallback to localStorage
-      console.log('Using localStorage fallback for user profile');
+      if (this.enableVerboseLogging) {
+        console.log('Using localStorage fallback for user profile');
+      }
       return JSON.parse(localStorage.getItem('userProfile') || '{}');
     }
     
     try {
-      console.log('Fetching user profile from backend:', `${this.baseUrl}/user/profile`);
+      if (this.enableVerboseLogging) {
+        console.log('Fetching user profile from backend:', `${this.baseUrl}/user/profile`);
+      }
       return await this.request('/user/profile');
     } catch (error) {
-      console.log('Backend request failed, falling back to localStorage:', error.message);
+      if (this.enableVerboseLogging) {
+        console.log('Backend request failed, falling back to localStorage:', error.message);
+      }
       // Fallback to localStorage on error
       return JSON.parse(localStorage.getItem('userProfile') || '{}');
     }
@@ -173,7 +191,9 @@ class ApiService {
           return this.menuApiService.getAllMenuItems(menu);
         }
       } catch (error) {
-        console.log('External menu API failed, falling back to backend/local menu');
+        if (this.enableVerboseLogging) {
+          console.log('External menu API failed, falling back to backend/local menu');
+        }
       }
     }
 
@@ -182,7 +202,9 @@ class ApiService {
       const response = await this.request('/meals');
       return response.meals || [];
     } catch (error) {
-      console.log('Backend not available, using fallback menu');
+      if (this.enableVerboseLogging) {
+        console.log('Backend not available, using fallback menu');
+      }
       return this.getFallbackMeals();
     }
   }
