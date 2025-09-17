@@ -1,6 +1,12 @@
 // Google Places API Service for Restaurant Discovery
 import axios from 'axios';
 
+const API_KEY = process.env.REACT_APP_GOOGLE_PLACES_API_KEY;
+
+if (!API_KEY) {
+  console.warn("Google Places API key not configured, using fallback data");
+}
+
 /**
  * Configuration constants for Google Places API service
  */
@@ -37,9 +43,9 @@ class GooglePlacesError extends Error {
  */
 class GooglePlacesService {
   constructor() {
-    this.apiKey = process.env.REACT_APP_GOOGLE_PLACES_API_KEY;
+    this.apiKey = API_KEY;
     this.baseUrl = CONFIG.BASE_URL;
-    this.isAvailable = !!this.apiKey;
+    this.isAvailable = !!API_KEY;
     
     // Initialize rate limiting
     this.requestQueue = [];
@@ -285,53 +291,59 @@ class GooglePlacesService {
 
   /**
    * Search for restaurants with enhanced error handling and caching
-   * @param {string} location - Location to search
+   * @param {string|Object} location - Location to search (string or {lat, lng} object)
    * @param {string} query - Search query (default: 'restaurant')
    * @param {number} radius - Search radius in meters (default: 5000)
    * @returns {Promise<Array>} Array of restaurant data
    */
   async searchRestaurants(location, query = CONFIG.DEFAULT_SEARCH_QUERY, radius = CONFIG.DEFAULT_RADIUS) {
+    // Basic validation to maintain test compatibility
+    if (!location || location === '') {
+      throw new GooglePlacesError('Location parameter is required and must be a non-empty string', 'INVALID_PARAMETER');
+    }
+    
+    if (radius && (typeof radius !== 'number' || radius <= 0 || radius > 50000)) {
+      throw new GooglePlacesError('Radius must be a number between 1 and 50000', 'INVALID_PARAMETER');
+    }
+
+    if (!API_KEY) {
+      console.warn("Google Places API key not configured, using fallback data");
+      return this.getFallbackRestaurants(
+        typeof location === 'string' ? location : 'downtown', 
+        query
+      );
+    }
+
     try {
-      // Validate input parameters
-      const params = this._validateSearchParams(location, query, radius);
-      
-      // Check cache first
-      const cacheKey = this._getCacheKey('search', params);
-      const cached = this._getFromCache(cacheKey);
-      if (cached) {
-        return cached;
-      }
-      
-      if (!this.isAvailable) {
-        console.warn('Google Places API key not configured, using fallback data');
-        return this.getFallbackRestaurants(params.location, params.query);
+      // Build the query URL based on location format
+      let url;
+      if (typeof location === 'object' && location.lat && location.lng) {
+        // Location is an object with lat/lng coordinates
+        url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&location=${location.lat},${location.lng}&radius=${radius}&key=${API_KEY}`;
+      } else {
+        // Location is a string, use text search
+        const searchQuery = `${encodeURIComponent(query)} in ${encodeURIComponent(location)}`;
+        url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${searchQuery}&key=${API_KEY}`;
       }
 
-      // Generate request ID for cancellation support
-      const requestId = `search_${Date.now()}_${Math.random()}`;
-
-      // First, try text search which is more flexible for location inputs
-      const response = await this.textSearch(params.location, params.query, requestId);
+      const response = await fetch(url);
+      const data = await response.json();
       
-      if (response && response.length > 0) {
-        // Cache the result
-        this._setCache(cacheKey, response);
-        return response;
+      if (data.status === 'OK' && data.results) {
+        return this.formatPlacesData(data.results);
+      } else {
+        console.log('Google Places API returned no results, using fallback');
+        return this.getFallbackRestaurants(
+          typeof location === 'string' ? location : 'downtown', 
+          query
+        );
       }
-
-      // Fallback to nearby search if text search fails
-      console.log('Text search returned no results, using fallback');
-      const fallbackData = this.getFallbackRestaurants(params.location, params.query);
-      this._setCache(cacheKey, fallbackData);
-      return fallbackData;
     } catch (error) {
-      if (error instanceof GooglePlacesError) {
-        console.error('Google Places API validation error:', error.message);
-        throw error;
-      }
-      
       console.error('Google Places API request failed:', error);
-      return this.getFallbackRestaurants(location, query);
+      return this.getFallbackRestaurants(
+        typeof location === 'string' ? location : 'downtown', 
+        query
+      );
     }
   }
 
@@ -908,4 +920,27 @@ class GooglePlacesService {
 
 // Create and export a singleton instance
 const googlePlacesService = new GooglePlacesService();
+
+// Export simple function as shown in problem statement
+export async function searchRestaurants(query, location) {
+  if (!API_KEY) {
+    return googlePlacesService.getFallbackRestaurants(
+      typeof location === 'string' ? location : 'downtown', 
+      query
+    );
+  }
+
+  let url;
+  if (typeof location === 'object' && location.lat && location.lng) {
+    url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&location=${location.lat},${location.lng}&radius=5000&key=${API_KEY}`;
+  } else {
+    const searchQuery = `${encodeURIComponent(query)} in ${encodeURIComponent(location)}`;
+    url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${searchQuery}&key=${API_KEY}`;
+  }
+
+  const response = await fetch(url);
+  const data = await response.json();
+  return data.results || [];
+}
+
 export default googlePlacesService;
