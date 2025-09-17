@@ -136,6 +136,128 @@ class ApiService {
     }
   }
 
+  // Login API with fallback
+  async login(credentials) {
+    // Always check backend availability first
+    if (this.isBackendAvailable === undefined) {
+      await this.checkBackendConnection();
+    }
+
+    if (!this.isBackendAvailable) {
+      // Fallback to mock login
+      console.log('Backend not available, using mock login');
+      return this.mockLogin(credentials);
+    }
+
+    try {
+      const response = await this.request('/login', {
+        method: 'POST',
+        body: credentials,
+      });
+      
+      // Store user data in localStorage
+      localStorage.setItem('user', JSON.stringify(response.user));
+      localStorage.setItem('token', response.token);
+      
+      return response;
+    } catch (error) {
+      console.log('Backend login failed, falling back to mock login:', error.message);
+      // Fallback to mock login on error
+      return this.mockLogin(credentials);
+    }
+  }
+
+  // Mock login for demo purposes
+  mockLogin(credentials) {
+    const { email, password } = credentials;
+    
+    if (!email || !password) {
+      throw new Error('Please enter valid credentials');
+    }
+
+    const mockUser = {
+      id: 1,
+      name: email.split('@')[0] || 'User',
+      email: email,
+      preferences: {
+        cuisineTypes: ['Italian', 'Asian'],
+        dietaryRestrictions: [],
+        servicePreference: 'dine-in'
+      }
+    };
+    
+    const mockResponse = {
+      user: mockUser,
+      token: 'mock-token'
+    };
+
+    localStorage.setItem('user', JSON.stringify(mockUser));
+    localStorage.setItem('token', 'mock-token');
+    
+    return mockResponse;
+  }
+
+  // Signup API with fallback
+  async signup(userData) {
+    // Always check backend availability first
+    if (this.isBackendAvailable === undefined) {
+      await this.checkBackendConnection();
+    }
+
+    if (!this.isBackendAvailable) {
+      // Fallback to mock signup
+      console.log('Backend not available, using mock signup');
+      return this.mockSignup(userData);
+    }
+
+    try {
+      const response = await this.request('/signup', {
+        method: 'POST',
+        body: userData,
+      });
+      
+      // Store user data in localStorage
+      localStorage.setItem('user', JSON.stringify(response.user));
+      localStorage.setItem('token', response.token);
+      
+      return response;
+    } catch (error) {
+      console.log('Backend signup failed, falling back to mock signup:', error.message);
+      // Fallback to mock signup on error
+      return this.mockSignup(userData);
+    }
+  }
+
+  // Mock signup for demo purposes
+  mockSignup(userData) {
+    const { name, email, password } = userData;
+    
+    if (!name || !email || !password) {
+      throw new Error('Please fill in all fields');
+    }
+
+    const mockUser = {
+      id: Date.now(),
+      name: name,
+      email: email,
+      preferences: {
+        cuisineTypes: [],
+        dietaryRestrictions: [],
+        servicePreference: 'dine-in'
+      }
+    };
+    
+    const mockResponse = {
+      user: mockUser,
+      token: 'mock-token'
+    };
+
+    localStorage.setItem('user', JSON.stringify(mockUser));
+    localStorage.setItem('token', 'mock-token');
+    
+    return mockResponse;
+  }
+
   // Restaurant Aggregator - Get meals filtered by user preferences
   async getMealsFiltered(preferences = {}) {
     const { cuisine, diet, maxPrice, category, allergens } = preferences;

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
+import apiService from '../services/api';
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -18,46 +18,12 @@ export default function Signup() {
     setError('');
     
     try {
-      // Replace the URL below with your backend endpoint
-      await axios.post('http://localhost:8000/api/signup', form);
-      
-      // For demo purposes, create mock user and navigate
-      const mockUser = {
-        id: Date.now(),
-        name: form.name,
-        email: form.email,
-        preferences: {
-          cuisineTypes: [],
-          dietaryRestrictions: [],
-          servicePreference: 'dine-in'
-        }
-      };
-      
-      localStorage.setItem('user', JSON.stringify(mockUser));
-      localStorage.setItem('token', 'mock-token');
+      const response = await apiService.signup(form);
       
       // Navigate to profile setup
       navigate('/profile-setup');
     } catch (err) {
-      // For demo, allow signup with any valid data
-      if (form.name && form.email && form.password) {
-        const mockUser = {
-          id: Date.now(),
-          name: form.name,
-          email: form.email,
-          preferences: {
-            cuisineTypes: [],
-            dietaryRestrictions: [],
-            servicePreference: 'dine-in'
-          }
-        };
-        
-        localStorage.setItem('user', JSON.stringify(mockUser));
-        localStorage.setItem('token', 'mock-token');
-        navigate('/profile-setup');
-      } else {
-        setError('Please fill in all fields');
-      }
+      setError(err.message || 'Please fill in all fields');
     } finally {
       setLoading(false);
     }

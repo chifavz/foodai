@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
+import apiService from '../services/api';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -18,34 +18,12 @@ export default function Login() {
     setError('');
     
     try {
-      // Replace with your backend endpoint
-      const response = await axios.post('http://localhost:8000/api/login', form);
-      
-      // Store user data in localStorage
-      localStorage.setItem('user', JSON.stringify(response.data.user));
-      localStorage.setItem('token', response.data.token);
+      const response = await apiService.login(form);
       
       // Navigate to customer interface
       navigate('/customer');
     } catch (err) {
-      // For demo purposes, allow login with any credentials
-      if (form.email && form.password) {
-        const mockUser = {
-          id: 1,
-          name: form.email.split('@')[0] || 'User',
-          email: form.email,
-          preferences: {
-            cuisineTypes: ['Italian', 'Asian'],
-            dietaryRestrictions: [],
-            servicePreference: 'dine-in'
-          }
-        };
-        localStorage.setItem('user', JSON.stringify(mockUser));
-        localStorage.setItem('token', 'mock-token');
-        navigate('/customer');
-      } else {
-        setError('Please enter valid credentials');
-      }
+      setError(err.message || 'Please enter valid credentials');
     } finally {
       setLoading(false);
     }
