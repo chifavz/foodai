@@ -326,8 +326,10 @@ class GooglePlacesService {
         url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${searchQuery}&key=${API_KEY}`;
       }
 
+      console.log('Google Places API request URL:', url);
       const response = await fetch(url);
       const data = await response.json();
+      console.log('Google Places API response:', data);
       
       if (data.status === 'OK' && data.results) {
         return this.formatPlacesData(data.results);
