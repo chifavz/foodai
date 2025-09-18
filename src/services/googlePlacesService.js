@@ -349,8 +349,15 @@ class GooglePlacesService {
         return this.getFallbackRestaurants(location, query);
       }
 
+
       console.log('Calling backend Places API with params:', params);
       const results = await this._callBackendPlacesAPI(params);
+
+      console.log('Google Places API request URL:', url);
+      const response = await fetch(url);
+      const data = await response.json();
+      console.log('Google Places API response:', data);
+
       
       if (results && results.length > 0) {
         return this.formatPlacesData(results);
