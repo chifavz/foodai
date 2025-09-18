@@ -13,16 +13,8 @@ function MenuList({
   // Optimize filtering with useMemo to prevent unnecessary re-calculations
   const filteredItems = useMemo(() => {
     return menuItems.filter(item => {
-      const searchMatch = !searchTerm || 
-                         item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         item.chef.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         item.restaurant_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         item.cuisine?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         item.category?.toLowerCase().includes(searchTerm.toLowerCase());
-      
       // Special handling for "Similar to" searches
-      if (searchTerm.startsWith('Similar to ')) {
+      if (searchTerm && searchTerm.startsWith('Similar to ')) {
         const itemName = searchTerm.replace('Similar to ', '');
         const referenceItem = menuItems.find(menuItem => 
           menuItem.name.toLowerCase().includes(itemName.toLowerCase())
@@ -33,10 +25,20 @@ function MenuList({
             item.cuisine === referenceItem.cuisine ||
             item.category === referenceItem.category ||
             item.chef === referenceItem.chef ||
-            item.diet === referenceItem.diet
+            (item.diet && referenceItem.diet && item.diet === referenceItem.diet)
           );
         }
+        return false; // If no reference item found, return nothing
       }
+      
+      // Regular search logic
+      const searchMatch = !searchTerm || 
+                         item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         item.chef.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         item.restaurant_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         item.cuisine?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         item.category?.toLowerCase().includes(searchTerm.toLowerCase());
       
       return searchMatch;
     });

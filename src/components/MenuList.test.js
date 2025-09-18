@@ -28,6 +28,19 @@ const mockMenuItems = [
     rating: 4.2,
     image: '🥗',
     allergens: []
+  },
+  {
+    id: 3,
+    name: 'Italian Pasta',
+    description: 'Delicious pasta',
+    chef: 'Test Chef',
+    restaurant_name: 'Italian Place',
+    cuisine: 'Italian',
+    category: 'Main Course',
+    price: 18,
+    rating: 4.3,
+    image: '🍝',
+    allergens: ['gluten']
   }
 ];
 
@@ -51,7 +64,7 @@ describe('MenuList', () => {
     
     expect(screen.getByText('Test Pizza')).toBeInTheDocument();
     expect(screen.getByText('Test Salad')).toBeInTheDocument();
-    expect(screen.getByText('🤖 AI found 2 meals matching your preferences')).toBeInTheDocument();
+    expect(screen.getByText('🤖 AI found 3 meals matching your preferences')).toBeInTheDocument();
   });
 
   test('filters items by search term', () => {
@@ -79,13 +92,16 @@ describe('MenuList', () => {
   test('displays restaurant count correctly', () => {
     render(<MenuList {...defaultProps} />);
     
-    expect(screen.getByText('From 2 partner restaurants')).toBeInTheDocument();
+    expect(screen.getByText('From 3 partner restaurants')).toBeInTheDocument();
   });
 
   test('handles similar search filtering', () => {
     render(<MenuList {...defaultProps} searchTerm="Similar to Test Pizza" />);
     
-    // Should show Test Salad as similar (different item, same category logic would need to be in the component)
-    expect(screen.getByText('🤖 AI found')).toBeInTheDocument();
+    // Should show only Italian Pasta as similar (same cuisine: Italian, same chef: Test Chef)
+    expect(screen.getByText('🤖 AI found 1 meal matching your preferences (filtered by "Similar to Test Pizza")')).toBeInTheDocument();
+    expect(screen.getByText('Italian Pasta')).toBeInTheDocument();
+    expect(screen.queryByText('Test Salad')).not.toBeInTheDocument(); // Different cuisine, category, chef
+    expect(screen.queryByText('Test Pizza')).not.toBeInTheDocument(); // Original item should be excluded
   });
 });

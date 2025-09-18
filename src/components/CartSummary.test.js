@@ -1,12 +1,10 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { BrowserRouter } from 'react-router-dom';
 import CartSummary from './CartSummary';
 
+// Mock the useNavigate hook
 const mockNavigate = jest.fn();
-
-jest.mock('react-router-dom', () => ({
-  ...jest.requireActual('react-router-dom'),
+jest.doMock('react-router-dom', () => ({
   useNavigate: () => mockNavigate,
 }));
 
@@ -21,9 +19,7 @@ const defaultProps = {
 
 const renderCartSummary = (props = {}) => {
   return render(
-    <BrowserRouter>
-      <CartSummary {...defaultProps} {...props} />
-    </BrowserRouter>
+    <CartSummary {...defaultProps} {...props} />
   );
 };
 

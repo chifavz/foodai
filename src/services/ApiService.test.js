@@ -43,6 +43,9 @@ describe('ApiService', () => {
       delete process.env.REACT_APP_API_BASE_URL;
       const apiService = new ApiService(null);
       expect(apiService.baseUrl).toBe('http://localhost:8000/api');
+    });
+  });
+});
 
 import apiService from './ApiService';
 
@@ -94,8 +97,8 @@ describe('ApiService', () => {
   });
 
   describe('constructor', () => {
-    it('should use default baseUrl port 5000 when no env var set', () => {
-      expect(apiService.baseUrl).toBe('http://localhost:5000/api');
+    it('should use default baseUrl port 8000 when no env var set', () => {
+      expect(apiService.baseUrl).toBe('http://localhost:8000/api');
     });
   });
 
@@ -106,7 +109,7 @@ describe('ApiService', () => {
       expect(crypto.randomUUID).toHaveBeenCalled();
       expect(localStorage.getItem('sessionId')).toBe('mock-uuid-123');
       expect(fetch).toHaveBeenCalledWith(
-        'http://localhost:5000/api/test',
+        'http://localhost:8000/api/test',
         expect.objectContaining({
           headers: expect.objectContaining({
             'X-Session-Id': 'mock-uuid-123',
@@ -122,7 +125,7 @@ describe('ApiService', () => {
 
       expect(crypto.randomUUID).not.toHaveBeenCalled();
       expect(fetch).toHaveBeenCalledWith(
-        'http://localhost:5000/api/test',
+        'http://localhost:8000/api/test',
         expect.objectContaining({
           headers: expect.objectContaining({
             'X-Session-Id': 'existing-session-id',
@@ -140,7 +143,7 @@ describe('ApiService', () => {
       await apiService.request('/test');
 
       expect(fetch).toHaveBeenCalledWith(
-        'http://localhost:5000/api/test',
+        'http://localhost:8000/api/test',
         expect.objectContaining({
           headers: expect.objectContaining({
             'Authorization': 'Bearer auth-token-123',
@@ -159,7 +162,7 @@ describe('ApiService', () => {
       await apiService.request('/test');
 
       expect(fetch).toHaveBeenCalledWith(
-        'http://localhost:5000/api/test',
+        'http://localhost:8000/api/test',
         expect.objectContaining({
           headers: expect.objectContaining({
             'X-Session-Id': 'session-123',
@@ -178,7 +181,7 @@ describe('ApiService', () => {
       await apiService.request('/test');
 
       expect(fetch).toHaveBeenCalledWith(
-        'http://localhost:5000/api/test',
+        'http://localhost:8000/api/test',
         expect.objectContaining({
           headers: expect.objectContaining({
             'Content-Type': 'application/json',
@@ -193,7 +196,7 @@ describe('ApiService', () => {
       });
 
       expect(fetch).toHaveBeenCalledWith(
-        'http://localhost:5000/api/test',
+        'http://localhost:8000/api/test',
         expect.objectContaining({
           headers: expect.objectContaining({
             'Content-Type': 'application/json',
@@ -209,7 +212,7 @@ describe('ApiService', () => {
       await apiService.request('/test', { body });
 
       expect(fetch).toHaveBeenCalledWith(
-        'http://localhost:5000/api/test',
+        'http://localhost:8000/api/test',
         expect.objectContaining({
           body: '{"data":"test"}',
         })
@@ -222,7 +225,7 @@ describe('ApiService', () => {
       await apiService.request('/test', { body });
 
       expect(fetch).toHaveBeenCalledWith(
-        'http://localhost:5000/api/test',
+        'http://localhost:8000/api/test',
         expect.objectContaining({
           body: '{"data":"test"}',
         })
