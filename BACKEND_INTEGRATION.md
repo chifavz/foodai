@@ -19,11 +19,16 @@ REACT_APP_YELP_API_KEY=your_yelp_api_key_here
 REACT_APP_CHOWNOW_API_KEY=your_chownow_api_key_here
 REACT_APP_OPENMENU_API_KEY=your_openmenu_api_key_here
 
+# Backend API Keys (server-side only, never exposed to frontend)
+GOOGLE_PLACES_API_KEY=your_backend_google_places_api_key_here
+
 # Affiliate Program Configuration
 REACT_APP_AFFILIATE_ID=your_affiliate_id_here
 REACT_APP_UBEREATS_AFFILIATE_ID=your_ubereats_affiliate_id_here
 REACT_APP_DOORDASH_AFFILIATE_ID=your_doordash_affiliate_id_here
 ```
+
+**Important:** The frontend no longer needs `REACT_APP_GOOGLE_PLACES_API_KEY`. All Google Places API calls are now routed through the backend to avoid referrer restriction issues.
 
 ### API Service
 
@@ -53,12 +58,39 @@ The frontend now supports multiple API endpoints from different services:
 - `GET /api/orders/history` - Get order history
 - `PUT /api/orders/{id}/rating` - Update order rating
 - `POST /api/ai/chat` - Send message to AI assistant
+- **NEW**: `GET /api/places` - Secure Google Places API proxy
 
 ### Yelp Fusion API Integration
 
 - `searchRestaurants(location, term, limit)` - Search for restaurants by location
 - `getRestaurantDetails(restaurantId)` - Get detailed restaurant information
 - Automatic fallback to hardcoded restaurant data when API unavailable
+
+### Google Places API Integration (Secure Backend Proxy)
+
+The Google Places API integration has been redesigned to fix referrer restriction issues:
+
+**Backend Endpoint**: `GET /api/places`
+
+**Parameters**:
+- `lat` (required): Latitude coordinate
+- `lng` (required): Longitude coordinate  
+- `radius` (optional): Search radius in meters (default: 1500)
+- `type` (optional): Place type filter (default: 'restaurant')
+- `query` (optional): Text search query
+
+**Example**:
+```
+GET /api/places?lat=37.7749&lng=-122.4194&radius=2000&query=italian%20restaurants
+```
+
+**Security Benefits**:
+- Google Places API key is never exposed to the frontend
+- Eliminates referrer restriction errors
+- Server-side rate limiting and error handling
+- Automatic fallback to local data when API is unavailable
+
+**Flow**: Frontend → Backend Server → Google Places API → Backend Server → Frontend
 
 ### Menu API Integration (ChowNow/OpenMenu)
 
@@ -215,8 +247,12 @@ When the backend is not available, the application automatically falls back to:
 
 1. Install dependencies: `npm install`
 2. Configure environment: Copy `.env.example` to `.env`
-3. Start development server: `npm start`
-4. Build for production: `npm run build`
+3. Set your Google Places API key in the `.env` file: `GOOGLE_PLACES_API_KEY=your_api_key_here`
+4. Start development server with both frontend and backend: `npm run dev`
+   - Or start them separately:
+     - Backend: `npm run server` (runs on port 5000)
+     - Frontend: `npm start` (runs on port 3000)
+5. Build for production: `npm run build`
 
 ## Backend Requirements
 
