@@ -65,8 +65,9 @@ describe('MenuList', () => {
   test('shows loading state', () => {
     render(<MenuList {...defaultProps} isLoading={true} />);
     
-    // Check for skeleton loaders
-    expect(document.querySelector('.animate-pulse')).toBeInTheDocument();
+    // Check for skeleton loaders - should have 6 skeleton items
+    const skeletonItems = document.querySelectorAll('.bg-white.rounded-lg.shadow-sm.p-6');
+    expect(skeletonItems.length).toBe(6);
   });
 
   test('shows no results message when no items match', () => {
@@ -85,7 +86,7 @@ describe('MenuList', () => {
   test('handles similar search filtering', () => {
     render(<MenuList {...defaultProps} searchTerm="Similar to Test Pizza" />);
     
-    // Should show Test Salad as similar (different item, same category logic would need to be in the component)
-    expect(screen.getByText('🤖 AI found')).toBeInTheDocument();
+    // Should show the AI found text with proper count
+    expect(screen.getByText(/🤖 AI found \d+ meals? matching your preferences/)).toBeInTheDocument();
   });
 });
