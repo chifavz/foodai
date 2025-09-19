@@ -15,6 +15,7 @@ import History from './components/History';
 import MealFinder from './components/MealFinder';
 
 import RestaurantDiscovery from './components/RestaurantDiscovery';
+import RestaurantAPIDemo from './components/RestaurantAPIDemo';
 
 // Import pages
 import Login from './pages/Login';
@@ -49,6 +50,7 @@ function App() {
 
 
               <Route path="/discover" element={<RestaurantDiscovery />} />
+              <Route path="/api-demo" element={<RestaurantAPIDemo />} />
 
               <Route path="/home" element={<Home />} />
               <Route path="/order" element={<Order />} />
