@@ -307,11 +307,37 @@ class GooglePlacesService {
     }
 
     if (!API_KEY) {
-      console.warn("Google Places API key not configured, using fallback data");
-      return this.getFallbackRestaurants(
-        typeof location === 'string' ? location : 'downtown', 
-        query
-      );
+      console.warn("Google Places API key not configured, trying backend API");
+      try {
+        // Try to get restaurants from backend API
+        const backendUrl = `${process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000/api'}/restaurants`;
+        const params = new URLSearchParams({
+          location: typeof location === 'string' ? location : 'downtown',
+          query: query,
+          radius: radius.toString()
+        });
+        
+        console.log(`Making backend request to: ${backendUrl}?${params.toString()}`);
+        const response = await axios.get(`${backendUrl}?${params.toString()}`);
+        
+        if (response.data && response.data.restaurants) {
+          console.log(`Backend API returned ${response.data.restaurants.length} restaurants`);
+          return response.data.restaurants;
+        } else {
+          console.log('Backend API returned no results, using fallback data');
+          return this.getFallbackRestaurants(
+            typeof location === 'string' ? location : 'downtown', 
+            query
+          );
+        }
+      } catch (error) {
+        console.error('Backend request failed:', error);
+        console.log('Using fallback data instead');
+        return this.getFallbackRestaurants(
+          typeof location === 'string' ? location : 'downtown', 
+          query
+        );
+      }
     }
 
     try {
