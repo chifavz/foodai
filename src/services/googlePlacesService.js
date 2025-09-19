@@ -297,55 +297,26 @@ class GooglePlacesService {
    * @returns {Promise<Array>} Array of restaurant data
    */
   async searchRestaurants(location, query = CONFIG.DEFAULT_SEARCH_QUERY, radius = CONFIG.DEFAULT_RADIUS) {
-    // Basic validation to maintain test compatibility
+    // Validate parameters
     if (!location || location === '') {
       throw new GooglePlacesError('Location parameter is required and must be a non-empty string', 'INVALID_PARAMETER');
     }
-    
-    if (radius && (typeof radius !== 'number' || radius <= 0 || radius > 50000)) {
-      throw new GooglePlacesError('Radius must be a number between 1 and 50000', 'INVALID_PARAMETER');
-    }
-
-    if (!API_KEY) {
-      console.warn("Google Places API key not configured, using fallback data");
-      return this.getFallbackRestaurants(
-        typeof location === 'string' ? location : 'downtown', 
-        query
-      );
-    }
 
     try {
-      // Build the query URL based on location format
-      let url;
-      if (typeof location === 'object' && location.lat && location.lng) {
-        // Location is an object with lat/lng coordinates
-        url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&location=${location.lat},${location.lng}&radius=${radius}&key=${API_KEY}`;
-      } else {
-        // Location is a string, use text search
-        const searchQuery = `${encodeURIComponent(query)} in ${encodeURIComponent(location)}`;
-        url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${searchQuery}&key=${API_KEY}`;
-      }
-
-      console.log('Google Places API request URL:', url);
+      // Call the backend instead of Google Places API directly
+      const url = `/api/restaurants?location=${encodeURIComponent(location)}&query=${encodeURIComponent(query)}&radius=${radius}`;
       const response = await axios.get(url);
       const data = response.data;
-      console.log('Google Places API response:', data);
-      
-      if (data.status === 'OK' && data.results) {
+
+      if (data.results) {
         return this.formatPlacesData(data.results);
       } else {
-        console.log('Google Places API returned no results, using fallback');
-        return this.getFallbackRestaurants(
-          typeof location === 'string' ? location : 'downtown', 
-          query
-        );
+        console.log('Backend returned no results, using fallback');
+        return this.getFallbackRestaurants(location, query);
       }
     } catch (error) {
-      console.error('Google Places API request failed:', error);
-      return this.getFallbackRestaurants(
-        typeof location === 'string' ? location : 'downtown', 
-        query
-      );
+      console.error('Backend request failed:', error);
+      return this.getFallbackRestaurants(location, query);
     }
   }
 

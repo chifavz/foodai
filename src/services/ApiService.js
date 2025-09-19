@@ -1,12 +1,3 @@
-function getSessionId() {
-  let sid = localStorage.getItem("sessionId");
-  if (!sid) {
-    sid = crypto.randomUUID();
-    localStorage.setItem("sessionId", sid);
-  }
-  return sid;
-}
-
 class ApiService {
   constructor(baseUrl = process.env.REACT_APP_API_BASE_URL) {
     // Ensure no trailing slash in base URL
@@ -18,15 +9,16 @@ class ApiService {
     const cleanEndpoint = endpoint.replace(/^\/+/, "");
     const url = `${this.baseUrl}/${cleanEndpoint}`;
 
-    // Attach token or sessionId
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("authToken"); // Retrieve token from localStorage or other storage
+
     const headers = {
       "Content-Type": "application/json",
-      ...(token
-        ? { Authorization: `Bearer ${token}` }
-        : { "X-Session-Id": getSessionId() }),
       ...options.headers,
     };
+
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`; // Add Authorization header if token exists
+    }
 
     const config = {
       ...options,
