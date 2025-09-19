@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000/api';
+
 export default function Signup() {
   const navigate = useNavigate();
   const [form, setForm] = useState({ name: '', email: '', password: '' });
@@ -19,7 +21,7 @@ export default function Signup() {
     
     try {
       // Replace the URL below with your backend endpoint
-      await axios.post('http://localhost:8000/api/signup', form);
+      await axios.post(`${API_BASE_URL}/signup`, form);
       
       // For demo purposes, create mock user and navigate
       const mockUser = {
