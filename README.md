@@ -57,6 +57,35 @@ npm start
 
 4. Open [http://localhost:3000](http://localhost:3000) to view the app in your browser.
 
+## 📚 API Documentation
+
+FoodAI includes a comprehensive REST API for restaurant discovery and menu integration powered by Swagger/OpenAPI documentation.
+
+### Running the API Server
+
+1. Start the API server:
+```bash
+node yelpMenuExample.js
+```
+
+2. Access the interactive API documentation at [http://localhost:3001/api-docs](http://localhost:3001/api-docs)
+
+### API Endpoints
+
+- **GET /api/restaurants/search** - Search for restaurants by location
+- **GET /api/restaurants/:id** - Get detailed restaurant information
+- **GET /api/restaurants/:id/reviews** - Get restaurant reviews
+- **GET /api/health** - API health check
+
+### Swagger UI Features
+
+- **Interactive Testing** - Test API endpoints directly from the browser
+- **Schema Documentation** - Complete request/response schemas
+- **Example Requests** - Sample data for easy testing
+- **Authentication Info** - API key configuration details
+
+The API integrates with Yelp Fusion API to provide real restaurant data. Configure your Yelp API key in the `yelpMenuExample.js` file for live data.
+
 ## 🧪 Available Scripts
 
 ### `npm start`

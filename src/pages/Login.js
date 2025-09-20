@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000/api';
+
 export default function Login() {
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: '', password: '' });
@@ -19,7 +21,7 @@ export default function Login() {
     
     try {
       // Replace with your backend endpoint
-      const response = await axios.post('http://localhost:8000/api/login', form);
+      const response = await axios.post(`${API_BASE_URL}/login`, form);
       
       // Store user data in localStorage
       localStorage.setItem('user', JSON.stringify(response.data.user));
