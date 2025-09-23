@@ -50,7 +50,7 @@ function LandingPage() {
             <h3 className="text-2xl font-bold text-gray-900 mb-8">Choose Your Experience</h3>
           </div>
           
-          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             {/* Menu Card */}
             <div className="bg-white rounded-lg shadow-lg p-8 hover:shadow-xl transition-shadow duration-300">
               <div className="text-center">
@@ -106,6 +106,31 @@ function LandingPage() {
                     className="w-full bg-gray-600 text-white py-2 px-6 rounded-lg font-semibold hover:bg-gray-700 transition-colors duration-300"
                   >
                     📋 Order History
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Chef Card */}
+            <div className="bg-white rounded-lg shadow-lg p-8 hover:shadow-xl transition-shadow duration-300">
+              <div className="text-center">
+                <div className="text-6xl mb-4">👨‍🍳</div>
+                <h4 className="text-2xl font-bold text-gray-900 mb-4">I'm a Chef</h4>
+                <p className="text-gray-600 mb-6">
+                  Join our platform as a chef or restaurant. Showcase your culinary creations and connect with food lovers.
+                </p>
+                <div className="space-y-3">
+                  <button
+                    onClick={() => navigate('/chef-signup')}
+                    className="w-full bg-red-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-red-700 transition-colors duration-300"
+                  >
+                    🏪 Join as Restaurant
+                  </button>
+                  <button
+                    onClick={() => navigate('/chef')}
+                    className="w-full bg-orange-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-orange-700 transition-colors duration-300"
+                  >
+                    📊 Chef Dashboard
                   </button>
                 </div>
               </div>

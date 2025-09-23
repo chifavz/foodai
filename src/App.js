@@ -19,6 +19,7 @@ import RestaurantDiscovery from './components/RestaurantDiscovery';
 // Import pages
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import ChefSignup from './pages/ChefSignup';
 import Home from './pages/Home';
 import Order from './pages/Order';
 import Profile from './pages/Profile';
@@ -37,6 +38,7 @@ function App() {
               <Route path="/" element={<LandingPage />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
+              <Route path="/chef-signup" element={<ChefSignup />} />
               <Route path="/chef" element={<GeneratedMenu />} />
               <Route path="/menu" element={<GeneratedMenu />} />
               <Route path="/customer" element={<CustomerInterface />} />
