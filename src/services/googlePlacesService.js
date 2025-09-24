@@ -297,14 +297,15 @@ class GooglePlacesService {
    * @returns {Promise<Array>} Array of restaurant data
    */
   async searchRestaurants(location, query = CONFIG.DEFAULT_SEARCH_QUERY, radius = CONFIG.DEFAULT_RADIUS) {
+    const BASE_URL = 'http://localhost:8000'; // Ensure BASE_URL is defined within the method
+
     // Validate parameters
     if (!location || location === '') {
       throw new GooglePlacesError('Location parameter is required and must be a non-empty string', 'INVALID_PARAMETER');
     }
 
     try {
-      // Call the backend instead of Google Places API directly
-      const url = `/api/restaurants?location=${encodeURIComponent(location)}&query=${encodeURIComponent(query)}&radius=${radius}`;
+      const url = `${BASE_URL}/api/restaurants?location=${encodeURIComponent(location)}&query=${encodeURIComponent(query)}&radius=${radius}`;
       const response = await axios.get(url);
       const data = response.data;
 

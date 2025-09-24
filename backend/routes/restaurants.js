@@ -17,6 +17,12 @@ router.get('/', async (req, res) => {
   }
 
   try {
+    console.log('Requesting Google Places API with params:', {
+      query: `${query} in ${location}`,
+      radius,
+      key: GOOGLE_PLACES_API_KEY,
+    });
+
     const response = await axios.get(GOOGLE_PLACES_API_URL, {
       params: {
         query: `${query} in ${location}`,
