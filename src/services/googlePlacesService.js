@@ -301,7 +301,8 @@ class GooglePlacesService {
 
     // Validate parameters
     if (!location || location === '') {
-      throw new GooglePlacesError('Location parameter is required and must be a non-empty string', 'INVALID_PARAMETER');
+      console.warn('Location parameter is required, using fallback data');
+      return this.getFallbackRestaurants(location, query);
     }
 
     try {
@@ -309,14 +310,26 @@ class GooglePlacesService {
       const response = await axios.get(url);
       const data = response.data;
 
-      if (data.results) {
+      // Check for API errors in the response
+      if (data.status === 'REQUEST_DENIED') {
+        console.warn('Google Places API key is invalid, using fallback data');
+        return this.getFallbackRestaurants(location, query);
+      }
+
+      if (data.status === 'OVER_QUERY_LIMIT') {
+        console.warn('Google Places API quota exceeded, using fallback data');
+        return this.getFallbackRestaurants(location, query);
+      }
+
+      if (data.results && Array.isArray(data.results)) {
         return this.formatPlacesData(data.results);
       } else {
         console.log('Backend returned no results, using fallback');
         return this.getFallbackRestaurants(location, query);
       }
     } catch (error) {
-      console.error('Backend request failed:', error);
+      console.error('Backend request failed:', error.response?.data || error.message);
+      console.log('Using fallback restaurant data');
       return this.getFallbackRestaurants(location, query);
     }
   }
@@ -897,24 +910,52 @@ const googlePlacesService = new GooglePlacesService();
 
 // Export simple function as shown in problem statement
 export async function searchRestaurants(query, location) {
-  if (!API_KEY) {
+  if (!API_KEY || API_KEY.trim() === '') {
+    console.warn('Google Places API key not configured, using fallback data');
     return googlePlacesService.getFallbackRestaurants(
       typeof location === 'string' ? location : 'downtown', 
       query
     );
   }
 
-  let url;
-  if (typeof location === 'object' && location.lat && location.lng) {
-    url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&location=${location.lat},${location.lng}&radius=5000&key=${API_KEY}`;
-  } else {
-    const searchQuery = `${encodeURIComponent(query)} in ${encodeURIComponent(location)}`;
-    url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${searchQuery}&key=${API_KEY}`;
-  }
+  try {
+    let url;
+    if (typeof location === 'object' && location.lat && location.lng) {
+      url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&location=${location.lat},${location.lng}&radius=5000&key=${API_KEY}`;
+    } else {
+      const searchQuery = `${encodeURIComponent(query)} in ${encodeURIComponent(location)}`;
+      url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${searchQuery}&key=${API_KEY}`;
+    }
 
-  const response = await axios.get(url);
-  const data = response.data;
-  return data.results || [];
+    const response = await axios.get(url);
+    const data = response.data;
+    
+    // Handle API errors
+    if (data.status === 'REQUEST_DENIED') {
+      console.warn('Google Places API key is invalid, using fallback data');
+      return googlePlacesService.getFallbackRestaurants(
+        typeof location === 'string' ? location : 'downtown', 
+        query
+      );
+    }
+
+    if (data.status === 'OVER_QUERY_LIMIT') {
+      console.warn('Google Places API quota exceeded, using fallback data');
+      return googlePlacesService.getFallbackRestaurants(
+        typeof location === 'string' ? location : 'downtown', 
+        query
+      );
+    }
+
+    return data.results || [];
+  } catch (error) {
+    console.error('Google Places API request failed:', error.response?.data || error.message);
+    console.log('Using fallback restaurant data');
+    return googlePlacesService.getFallbackRestaurants(
+      typeof location === 'string' ? location : 'downtown', 
+      query
+    );
+  }
 }
 
 export default googlePlacesService;
