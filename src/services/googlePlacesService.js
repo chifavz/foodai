@@ -309,7 +309,7 @@ class GooglePlacesService {
       const response = await axios.get(url);
       const data = response.data;
 
-      if (data.results) {
+      if (data.results && data.results.length > 0) {
         return this.formatPlacesData(data.results);
       } else {
         console.log('Backend returned no results, using fallback');
