@@ -7,6 +7,7 @@ import CartSummary from './CartSummary';
 import MenuList from './MenuList';
 import ItemDetailsModal from './ItemDetailsModal';
 import SearchAndFilters from './SearchAndFilters';
+import RestaurantReviews from './RestaurantReviews';
 import useCart from '../hooks/useCart';
 import apiService from '../services/api';
 
@@ -277,6 +278,16 @@ function CustomerInterface() {
               onShowSimilar={handleShowSimilar}
               onFilterByCuisine={handleFilterByCuisine}
             />
+
+            {/* Restaurant Reviews - Only show when viewing a specific restaurant */}
+            {currentRestaurant && (
+              <div className="mt-8">
+                <RestaurantReviews 
+                  restaurantId={currentRestaurant.id} 
+                  restaurantName={currentRestaurant.name}
+                />
+              </div>
+            )}
 
             {/* No Results Message is now handled in MenuList */}
           </div>
