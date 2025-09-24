@@ -312,7 +312,7 @@ class GooglePlacesService {
       if (data.results && data.results.length > 0) {
         return this.formatPlacesData(data.results);
       } else {
-        console.log('Backend returned no results, using fallback');
+        console.info('Backend returned no results, using fallback data');
         return this.getFallbackRestaurants(location, query);
       }
     } catch (error) {
@@ -894,27 +894,5 @@ class GooglePlacesService {
 
 // Create and export a singleton instance
 const googlePlacesService = new GooglePlacesService();
-
-// Export simple function as shown in problem statement
-export async function searchRestaurants(query, location) {
-  if (!API_KEY) {
-    return googlePlacesService.getFallbackRestaurants(
-      typeof location === 'string' ? location : 'downtown', 
-      query
-    );
-  }
-
-  let url;
-  if (typeof location === 'object' && location.lat && location.lng) {
-    url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query)}&location=${location.lat},${location.lng}&radius=5000&key=${API_KEY}`;
-  } else {
-    const searchQuery = `${encodeURIComponent(query)} in ${encodeURIComponent(location)}`;
-    url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${searchQuery}&key=${API_KEY}`;
-  }
-
-  const response = await axios.get(url);
-  const data = response.data;
-  return data.results || [];
-}
 
 export default googlePlacesService;

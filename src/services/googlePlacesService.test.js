@@ -1,7 +1,7 @@
 import googlePlacesService from './googlePlacesService';
 import axios from 'axios';
 
-// Clear mocks before each test
+// Mock axios before all tests
 jest.mock('axios');
 
 describe('GooglePlacesService', () => {
