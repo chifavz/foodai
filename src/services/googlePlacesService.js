@@ -310,6 +310,7 @@ class GooglePlacesService {
       const response = await axios.get(url);
       const data = response.data;
 
+
       // Check for API errors in the response
       if (data.status === 'REQUEST_DENIED') {
         console.warn('Google Places API key is invalid, using fallback data');
@@ -322,9 +323,12 @@ class GooglePlacesService {
       }
 
       if (data.results && Array.isArray(data.results)) {
+
+      if (data.results && data.results.length > 0) {
+
         return this.formatPlacesData(data.results);
       } else {
-        console.log('Backend returned no results, using fallback');
+        console.info('Backend returned no results, using fallback data');
         return this.getFallbackRestaurants(location, query);
       }
     } catch (error) {
@@ -908,6 +912,7 @@ class GooglePlacesService {
 // Create and export a singleton instance
 const googlePlacesService = new GooglePlacesService();
 
+
 // Export simple function as shown in problem statement
 export async function searchRestaurants(query, location) {
   if (!API_KEY || API_KEY.trim() === '') {
@@ -957,5 +962,7 @@ export async function searchRestaurants(query, location) {
     );
   }
 }
+
+
 
 export default googlePlacesService;

@@ -1,8 +1,7 @@
-const googlePlacesService = require('./googlePlacesService');
-
+import googlePlacesService from './googlePlacesService';
 import axios from 'axios';
 
-// Clear mocks before each test
+// Mock axios before all tests
 jest.mock('axios');
 
 describe('GooglePlacesService', () => {
@@ -88,7 +87,7 @@ describe('GooglePlacesService', () => {
     });
 
     test('should throw error for invalid radius', async () => {
-      await expect(googlePlacesService._validateSearchParams('downtown', 'restaurant', -1)).toThrow('Radius must be a number between 1 and 50000');
+      expect(() => googlePlacesService._validateSearchParams('downtown', 'restaurant', -1)).toThrow('Radius must be a number between 1 and 50000');
     });
   });
 });
